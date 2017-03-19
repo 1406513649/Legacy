@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "Exporter": {
+    "template_path": [
+      ".",
+      "/Users/e63302/Local/env/Jupyter/jupyter_contrib_nbextensions/src/jupyter_contrib_nbextensions/templates",
+      "/anaconda/3.5/lib/python3.5/site-packages/jupyter_contrib_nbextensions/templates"
+    ],
+    "preprocessors": [
+      "jupyter_contrib_nbextensions.nbconvert_support.CodeFoldingPreprocessor",
+      "jupyter_contrib_nbextensions.nbconvert_support.PyMarkdownPreprocessor"
+    ]
+  },
+  "NbConvertApp": {
+    "postprocessor_class": "jupyter_contrib_nbextensions.nbconvert_support.EmbedPostProcessor"
+  }
+}

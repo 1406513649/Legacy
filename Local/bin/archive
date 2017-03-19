@@ -1,0 +1,116 @@
+#!/usr/bin/env python
+"""Create a dated archive directory Archive_YEAR/MM.DD.YYYY and move requested
+contents in to that directory.
+
+"""
+
+import os
+import re
+import sys
+import shutil
+import datetime
+import argparse
+
+now = datetime.datetime.now()
+
+F = os.path.realpath(__file__)
+D, X = os.path.split(F)
+PRE = "Archive"
+CWD = os.path.realpath(os.getcwd())
+
+desc = "{0}: archive files or directory to .{1}{2}_{3}".format(
+    X, os.sep, PRE, now.year)
+
+def logmes(message):
+    sys.stdout.write(message + "\n")
+
+def main(argv):
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument("sources", nargs="+",
+        help="""files/directories to archive.  Special keyword 'all'
+archives all files and directories in the current working directory""")
+    parser.add_argument("--exclude", action="append", default=[".DS_Store"],
+                        help="files/directories to exclude")
+    parser.add_argument("--mv", action="store_true", default=False,
+                        help="Move, don't copy [default: %(default)s]")
+    parser.add_argument("--prefix", default=PRE,
+        help="Parent arhive directory prefix [default: %(default)s]")
+    parser.add_argument("-t", default=False, action="store_true",
+        help="Append HH:MM:SS to archive directory [default: %(default)s]")
+    parser.add_argument("-F", default=False, action="store_true",
+        help="Move old archive if exists [default: %(default)s]")
+    args = parser.parse_args(argv)
+
+    ARC = "{0}_{1}".format(args.prefix, now.year)
+
+    if "all" in [x.lower() for x in args.sources]:
+        args.sources = [x for x in os.listdir(CWD)]
+    sources = []
+    for source in args.sources:
+        if ARC in source:
+            continue
+        for ex in args.exclude:
+            if "*" in ex:
+                ex = ex.replace("*", ".*")
+            if re.search(ex, source):
+                break
+        else:
+            sources.append(source)
+        continue
+    L = max(len(os.path.basename(x)) for x in sources)
+
+    AD = os.path.join(os.getcwd(), ARC)
+    subdir = os.path.join(AD,"{0}.{1:02d}.{2:02d}".format(
+            now.year, now.month, now.day))
+    if args.t:
+        subdir = "{0}@{1:02d}:{2:02d}:{3:02d}".format(
+            subdir, now.hour, now.minute, now.second)
+    if not os.path.isdir(subdir):
+        logmes("CREATING: {0}".format(subdir.replace(CWD, ".")))
+        os.makedirs(subdir)
+
+    for src in sources:
+        # check existence
+        if not os.path.exists(src):
+            logmes("{0}: {1}: no such file or directory".format(X, src))
+            continue
+
+        # archive copy
+        dst = os.path.join(subdir, os.path.basename(src))
+
+        if os.path.exists(dst):
+            if not args.F:
+                logmes("{0}: archive exists. skipping. -F forces rearchive"
+                       .format(src))
+                continue
+            for i in range(1000):
+                tmp = dst + "_{0}".format(str(i))
+                if not os.path.isfile(tmp):
+                    break
+                continue
+            logmes("archive {0} exists, renamed to {1}".format(dst, tmp))
+            dst = tmp
+
+        # move to archive directory
+        f = dst.replace(CWD, ".")
+        logmes("ARCHIVING: {0} to {2}".format(os.path.basename(src), L, f))
+        copy(src, dst, move=args.mv)
+
+        continue
+
+    return
+
+
+def copy(src, dst, move=False):
+    if move:
+        action = shutil.move
+    elif os.path.isdir(src):
+        action = shutil.copytree
+    else:
+        action = shutil.copyfile
+    action(src, dst)
+    shutil.copymode(src, dst)
+    return
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

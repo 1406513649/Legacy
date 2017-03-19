@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+import os
+import sys
+import errno
+import os.path as op
+from subprocess import Popen, STDOUT
+from argparse import ArgumentParser
+
+projects_d = '/projects'
+snl_net_projects_d = '/net/sherlock/storage/fast/projects'
+my_local_projects_d = '/opt/sems/darwin/projects'
+
+p = ArgumentParser()
+p.add_argument('action', choices=('local', 'snl'))
+args = p.parse_args()
+
+if args.action == 'local':
+    source = my_local_projects_d
+else:
+    source = snl_net_projects_d
+
+assert op.exists(source)
+with open(os.devnull, 'a') as fh:
+    p = Popen(['rm', '-f', projects_d], stdout=fh, stderr=STDOUT)
+    p.wait()
+    if p.returncode != 0:
+        sys.exit('This script must be run as root')
+
+    print('Linking {0} -> {1}'.format(projects_d, source))
+    p = Popen(['ln', '-s', source, projects_d], stdout=fh, stderr=STDOUT)
+    p.wait()
+    if p.returncode != 0:
+        sys.exit('This script must be run as root')

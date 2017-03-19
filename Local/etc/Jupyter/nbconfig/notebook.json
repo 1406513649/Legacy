@@ -1,0 +1,17 @@
+{
+  "load_extensions": {
+    "comment-uncomment/main": true,
+    "highlighter/highlighter": true,
+    "nbextensions_configurator/config_menu/main": true,
+    "move_selected_cells/main": true,
+    "collapsible_headings/main": true
+  },
+  "collapsible_headings": {
+    "show_ellipsis": false,
+    "make_toggle_controls_buttons": false,
+    "size_toggle_controls_by_level": true,
+    "add_button": true,
+    "show_section_brackets": true,
+    "add_insert_header_buttons": true
+  }
+}

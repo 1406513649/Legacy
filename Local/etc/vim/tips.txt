@@ -1,0 +1,11 @@
+Format paragraph (wrap and indent)
+
+- gqip
+- gqap
+- gqic (format comment)
+ 
+use gw to preserve cursor position
+
+
+ ']  `]         To the last character of the previously changed or
+                yanked text.  {not in Vi} 

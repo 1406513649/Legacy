@@ -1,0 +1,1095 @@
+! max_str_length        =  32
+! max_var_name_length   =  20
+! max_line_length       =  80
+subroutine py_exclos (idexo, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(out) :: ierr
+  call <-exclos-> (idexo, ierr)
+end subroutine py_exclos
+
+subroutine py_excn2s (idexo, nsess, ndess, ixeess, ixness, lteess, ltness, ltsess, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nsess (*)
+  integer, intent(in) :: ndess (*)
+  integer, intent(in) :: ixeess (*)
+  integer, intent(in) :: ixness (*)
+  integer, intent(in) :: lteess (*)
+  integer, intent(in) :: ltness (*)
+  integer, intent(out) :: ltsess (*)
+  integer, intent(out) :: ierr
+  call <-excn2s-> (idexo, nsess, ndess, ixeess, ixness, lteess, ltness, ltsess, ierr)
+end subroutine py_excn2s
+
+subroutine py_exerr (modnam, msg, errnum)
+  character* (*), intent(in) :: modnam
+  character* (*), intent(in) :: msg
+  integer, intent(in) :: errnum
+  call <-exerr-> (modnam, msg, errnum)
+end subroutine py_exerr
+
+subroutine py_exgatm (idexo, nt, time, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nt
+  real, intent(out) :: time (nt)
+  integer, intent(out) :: ierr
+  call <-exgatm-> (idexo, time, ierr)
+end subroutine py_exgatm
+
+subroutine py_exgcns (idexo, idnpss, nnnps, ndnps, ixnnps, &
+     ixdnps, ltnnps, facnps, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(out) :: idnpss (*)
+  integer, intent(out) :: nnnps (*)
+  integer, intent(out) :: ndnps (*)
+  integer, intent(out) :: ixnnps (*)
+  integer, intent(out) :: ixdnps (*)
+  integer, intent(out) :: ltnnps (*)
+  real, intent(out) :: facnps (*)
+  integer, intent(out) :: ierr
+  call <-exgcns-> (idexo, idnpss, nnnps, ndnps, ixnnps, ixdnps, ltnnps, facnps, ierr)
+end subroutine py_exgcns
+
+subroutine py_exgfrm (idexo, nframe, idscf, coord, itags, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nframe
+  integer, intent(out) :: idscf(*)
+  integer, intent(out) :: itags(*)
+  integer, intent(out) :: ierr
+  real, intent(out) :: coord(*)
+  call <-exgfrm-> (idexo, nframe, idscf, coord, itags, ierr)
+end subroutine py_exgfrm
+
+subroutine py_expfrm (idexo, nframe, idscf, coord, itags, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nframe
+  integer, intent(in) :: idscf(*)
+  integer, intent(in) :: itags(*)
+  integer, intent(out) :: ierr
+  real, intent(in) :: coord(*)
+  call <-expfrm-> (idexo, nframe, idscf, coord, itags, ierr)
+end subroutine py_expfrm
+
+subroutine py_exgcon (idexo, ncoor, nameco, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: ncoor
+  character*1, intent(out) :: nameco (ncoor)
+  integer, intent(out) :: ierr
+  call <-exgcon-> (idexo, nameco, ierr)
+end subroutine py_exgcon
+
+subroutine py_exgcor (idexo, nnode, xn, yn, zn, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nnode
+  real, intent(out) :: xn (nnode)
+  real, intent(out) :: yn (nnode)
+  real, intent(out) :: zn (nnode)
+  integer, intent(out) :: ierr
+  call <-exgcor-> (idexo, xn, yn, zn, ierr)
+end subroutine py_exgcor
+
+subroutine py_exgcss (idexo, idesss, nsess, ndess, ixeess, ixdess, &
+     lteess, ltsess, facess, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(out) :: idesss (*)
+  integer, intent(out) :: nsess (*)
+  integer, intent(out) :: ndess (*)
+  integer, intent(out) :: ixeess (*)
+  integer, intent(out) :: ixdess (*)
+  integer, intent(out) :: lteess (*)
+  integer, intent(out) :: ltsess (*)
+  real, intent(out) :: facess (*)
+  integer, intent(out) :: ierr
+  call <-exgcss-> (idexo, idesss, nsess, ndess, ixeess, ixdess, lteess, ltsess, facess, ierr)
+end subroutine py_exgcss
+
+subroutine py_exgcssf (idexo, idesss, nsess, ndess, ixeess, ixdess, lteess, ltsess, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(out) :: idesss (*)
+  integer, intent(out) :: nsess (*)
+  integer, intent(out) :: ndess (*)
+  integer, intent(out) :: ixeess (*)
+  integer, intent(out) :: ixdess (*)
+  integer, intent(out) :: lteess (*)
+  integer, intent(out) :: ltsess (*)
+  integer, intent(out) :: ierr
+  call <-exgcssf-> (idexo, idesss, nsess, ndess, ixeess, ixdess, lteess, ltsess, ierr)
+end subroutine py_exgcssf
+
+subroutine py_exgeat (idexo, idelb, natrib, atrib, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idelb
+  integer, intent(in) :: natrib
+  real, intent(out) :: atrib (natrib)
+  integer, intent(out) :: ierr
+  call <-exgeat-> (idexo, idelb, atrib, ierr)
+end subroutine py_exgeat
+
+subroutine py_exgean (idexo, idelb, nattr, nnames, names, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idelb
+  integer, intent(in) :: nattr
+  integer, intent(in) :: nnames
+  character*32, intent(out) :: names (nnames)
+  integer, intent(out) :: ierr
+  call <-exgean-> (idexo, idelb, nattr, names, ierr)
+end subroutine py_exgean
+
+subroutine py_exgebi (idexo, nelbs, idelbs, ierr)
+  implicit none
+  integer, intent(in) :: idexo, nelbs
+  integer, intent(out) :: idelbs (nelbs)
+  integer, intent(out) :: ierr
+  call <-exgebi-> (idexo, idelbs, ierr)
+end subroutine py_exgebi
+
+subroutine py_exgelb (idexo, idelb, namelb, numelb, numlnk, numatr, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idelb
+  character*32, intent(out) :: namelb
+  integer, intent(out) :: numelb
+  integer, intent(out) :: numlnk
+  integer, intent(out) :: numatr
+  integer, intent(out) :: ierr
+  call <-exgelb-> (idexo, idelb, namelb, numelb, numlnk, numatr, ierr)
+end subroutine py_exgelb
+
+subroutine py_exgelc (idexo, idelb, numlnk, numelb, link, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idelb
+  integer, intent(in) :: numlnk
+  integer, intent(in) :: numelb
+  integer, intent(out) :: link (numlnk * numelb)
+  integer, intent(out) :: ierr
+  call <-exgelc-> (idexo, idelb, link, ierr)
+end subroutine py_exgelc
+
+subroutine py_exgecpp (idexo, itype, idelb, counts, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idelb
+  integer, intent(in) :: itype
+  integer, intent(out) :: counts (*)
+  integer, intent(out) :: ierr
+  call <-exgecpp-> (idexo, itype, idelb, counts, ierr)
+end subroutine py_exgecpp
+
+subroutine py_exgenm (idexo, nel, mapel, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nel
+  integer, intent(out) :: mapel (nel)
+  integer, intent(out) :: ierr
+  call <-exgenm-> (idexo, mapel, ierr)
+end subroutine py_exgenm
+
+subroutine py_exgem (idexo, mapid, mapel, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: mapid
+  integer, intent(out) :: mapel (*)
+  integer, intent(out) :: ierr
+  call <-exgem-> (idexo, mapid, mapel, ierr)
+end subroutine py_exgem
+
+subroutine py_exgpem (idexo, mapid, istart, icount, mapel, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: mapid
+  integer, intent(in) :: istart
+  integer, intent(in) :: icount
+  integer, intent(out) :: mapel (*)
+  integer, intent(out) :: ierr
+  call <-exgpem-> (idexo, mapid, istart, icount, mapel, ierr)
+end subroutine py_exgpem
+
+subroutine py_exgev (idexo, istep, ixelev, idelb, numelb, valev, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: istep
+  integer, intent(in) :: ixelev
+  integer, intent(in) :: idelb
+  integer, intent(in) :: numelb
+  real, intent(out) :: valev (numelb)
+  integer, intent(out) :: ierr
+  call <-exgev-> (idexo, istep, ixelev, idelb, numelb, valev, ierr)
+end subroutine py_exgev
+
+subroutine py_exgevt (idexo, ixelev, ielnum, istpb, istpe, valev, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: ixelev
+  integer, intent(in) :: ielnum
+  integer, intent(in) :: istpb
+  integer, intent(in) :: istpe
+  real, intent(out) :: valev (istpe-istpb+1)
+  integer, intent(out) :: ierr
+  call <-exgevt-> (idexo, ixelev, ielnum, istpb, istpe, valev, ierr)
+end subroutine py_exgevt
+
+subroutine py_exgnsv (idexo, istep, ixv, id, num, val, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: istep
+  integer, intent(in) :: ixv
+  integer, intent(in) :: id
+  integer, intent(in) :: num
+  real, intent(out) :: val (*)
+  integer, intent(out) :: ierr
+  call <-exgnsv-> (idexo, istep, ixv, id, num, val, ierr)
+end subroutine py_exgnsv
+
+subroutine py_exgssv (idexo, istep, ixv, id, num, val, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: istep
+  integer, intent(in) :: ixv
+  integer, intent(in) :: id
+  integer, intent(in) :: num
+  real, intent(out) :: val (*)
+  integer, intent(out) :: ierr
+  call <-exgssv-> (idexo, istep, ixv, id, num, val, ierr)
+end subroutine py_exgssv
+
+subroutine py_exggv (idexo, istep, nvargl, valgv, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: istep
+  integer, intent(in) :: nvargl
+  real, intent(out) :: valgv (nvargl)
+  integer, intent(out) :: ierr
+  call <-exggv-> (idexo, istep, nvargl, valgv, ierr)
+end subroutine py_exggv
+
+subroutine py_exggvt (idexo, ixglov, istpb, istpe, valgv, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: ixglov
+  integer, intent(in) :: istpb
+  integer, intent(in) :: istpe
+  real, intent(out) :: valgv (istpe-istpb+1)
+  integer, intent(out) :: ierr
+  call <-exggvt-> (idexo, ixglov, istpb, istpe, valgv, ierr)
+end subroutine py_exggvt
+
+subroutine py_exginf (idexo, ninfo, info, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: ninfo
+  character*32, intent(out) :: info (ninfo)
+  integer, intent(out) :: ierr
+  call <-exginf-> (idexo, info, ierr)
+end subroutine py_exginf
+
+subroutine py_exgini (idexo, title, ndim, numnp, numel, &
+     nelblk, numnps, numess, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  character(len=80), intent(out) :: title
+  integer, intent(out) :: ndim
+  integer, intent(out) :: numnp
+  integer, intent(out) :: numel
+  integer, intent(out) :: nelblk
+  integer, intent(out) :: numnps
+  integer, intent(out) :: numess
+  integer, intent(out) :: ierr
+  call <-exgini-> (idexo, title, ndim, numnp, numel, nelblk, numnps, numess, ierr)
+end subroutine py_exgini
+
+subroutine py_exgmp (idexo, nnmap, nemap, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(out) :: nnmap
+  integer, intent(out) :: nemap
+  integer, intent(out) :: ierr
+  call <-exgmp-> (idexo, nnmap, nemap, ierr)
+end subroutine py_exgmp
+
+subroutine py_expmp (idexo, nnmap, nemap, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(out) :: nnmap
+  integer, intent(out) :: nemap
+  integer, intent(out) :: ierr
+  call <-expmp-> (idexo, nnmap, nemap, ierr)
+end subroutine py_expmp
+
+subroutine py_exgmap (idexo, nel, mapel, ierr)
+  implicit none
+  integer, intent(in) :: idexo, nel
+  integer, intent(out) :: mapel (nel)
+  integer, intent(out) :: ierr
+  call <-exgmap-> (idexo, mapel, ierr)
+end subroutine py_exgmap
+
+subroutine py_exgnnm (idexo, mapnod, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(out) :: mapnod (*)
+  integer, intent(out) :: ierr
+  call <-exgnnm-> (idexo, mapnod, ierr)
+end subroutine py_exgnnm
+
+subroutine py_exgnm (idexo, mapid, mapnod, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: mapid
+  integer, intent(out) :: mapnod (*)
+  integer, intent(out) :: ierr
+  call <-exgnm-> (idexo, mapid, mapnod, ierr)
+end subroutine py_exgnm
+
+subroutine py_exgnp (idexo, idnps, nnnps, ndnps, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idnps
+  integer, intent(out) :: nnnps
+  integer, intent(out) :: ndnps
+  integer, intent(out) :: ierr
+  call <-exgnp-> (idexo, idnps, nnnps, ndnps, ierr)
+end subroutine py_exgnp
+
+subroutine py_exgns (idexo, idnps, nnps, ltnnps, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idnps
+  integer, intent(in) :: nnps
+  integer, intent(out) :: ltnnps (nnps)
+  integer, intent(out) :: ierr
+  call <-exgns-> (idexo, idnps, ltnnps, ierr)
+end subroutine py_exgns
+
+subroutine py_exgnsd (idexo, idnps, ndf, facnps, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idnps
+  integer, intent(in) :: ndf
+  real, intent(out) :: facnps (ndf)
+  integer, intent(out) :: ierr
+  call <-exgnsd-> (idexo, idnps, facnps, ierr)
+end subroutine py_exgnsd
+
+subroutine py_exgnsi (idexo, nnsi, idnpss, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nnsi
+  integer, intent(out) :: idnpss (nnsi)
+  integer, intent(out) :: ierr
+  call <-exgnsi-> (idexo, idnpss, ierr)
+end subroutine py_exgnsi
+
+subroutine py_exgnv (idexo, istep, ixnodv, numnp, valnv, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: istep
+  integer, intent(in) :: ixnodv
+  integer, intent(in) :: numnp
+  real, intent(out) :: valnv (numnp)
+  integer, intent(out) :: ierr
+  call <-exgnv-> (idexo, istep, ixnodv, numnp, valnv, ierr)
+end subroutine py_exgnv
+
+subroutine py_exgnvt (idexo, ixnodv, nodnum, istpb, istpe, valnv, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: ixnodv
+  integer, intent(in) :: nodnum
+  integer, intent(in) :: istpb
+  integer, intent(in) :: istpe
+  real, intent(out) :: valnv (istpe-istpb+1)
+  integer, intent(out) :: ierr
+  call <-exgnvt-> (idexo, ixnodv, nodnum, istpb, istpe, valnv, ierr)
+end subroutine py_exgnvt
+
+subroutine py_exgp (idexo, itype, id, namepr, ival, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: itype
+  integer, intent(in) :: id
+  character* (*), intent(in) :: namepr
+  integer, intent(out) :: ival
+  integer, intent(out) :: ierr
+  call <-exgp-> (idexo, itype, id, namepr, ival, ierr)
+end subroutine py_exgp
+
+subroutine py_exgpa (idexo, itype, namepr, ival, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: itype
+  character* (*), intent(in) :: namepr
+  integer, intent(out) :: ival (*)
+  integer, intent(out) :: ierr
+  call <-exgpa-> (idexo, itype, namepr, ival, ierr)
+end subroutine py_exgpa
+
+subroutine py_exgpn (idexo, itype, nprops, namepr, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: itype
+  integer, intent(in) :: nprops
+  character*32, intent(out) :: namepr (nprops)
+  integer, intent(out) :: ierr
+  call <-exgpn-> (idexo, itype, namepr, ierr)
+end subroutine py_exgpn
+
+subroutine py_exgqa (idexo, nqa, qarec, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nqa
+  character*32, intent(out) :: qarec (4, nqa)
+  integer, intent(out) :: ierr
+  call <-exgqa-> (idexo, qarec, ierr)
+end subroutine py_exgqa
+
+subroutine py_exgsp (idexo, idess, nsess, ndess, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idess
+  integer, intent(out) :: nsess
+  integer, intent(out) :: ndess
+  integer, intent(out) :: ierr
+  call <-exgsp-> (idexo, idess, nsess, ndess, ierr)
+end subroutine py_exgsp
+
+subroutine py_exgsnl (idexo, idess, nness, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idess
+  integer, intent(out) :: nness
+  integer, intent(out) :: ierr
+  call <-exgsnl-> (idexo, idess, nness, ierr)
+end subroutine py_exgsnl
+
+subroutine py_exgss (idexo, idess, nsis, lteess, ltsess, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idess
+  integer, intent(in) :: nsis
+  integer, intent(out) :: lteess (nsis)
+  integer, intent(out) :: ltsess (nsis)
+  integer, intent(out) :: ierr
+  call <-exgss-> (idexo, idess, lteess, ltsess, ierr)
+end subroutine py_exgss
+
+subroutine py_exgssd (idexo, idess, ndf, facess, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idess
+  integer, intent(in) :: ndf
+  real, intent(out) :: facess (ndf)
+  integer, intent(out) :: ierr
+  call <-exgssd-> (idexo, idess, facess, ierr)
+end subroutine py_exgssd
+
+subroutine py_exgssi (idexo, nss, idesss, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nss
+  integer, intent(out) :: idesss (nss)
+  integer, intent(out) :: ierr
+  call <-exgssi-> (idexo, idesss, ierr)
+end subroutine py_exgssi
+
+subroutine py_exgssn (idexo, idess, neis, ndf, incnt, ltness, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idess
+  integer, intent(in) :: neis
+  integer, intent(in) :: ndf
+  integer, intent(out) :: incnt (neis)
+  integer, intent(out) :: ltness (ndf)
+  integer, intent(out) :: ierr
+  call <-exgssn-> (idexo, idess, incnt, ltness, ierr)
+end subroutine py_exgssn
+
+subroutine py_exgssc (idexo, idess, incnt, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idess
+  integer, intent(out) :: incnt (*)
+  integer, intent(out) :: ierr
+  call <-exgssc-> (idexo, idess, incnt, ierr)
+end subroutine py_exgssc
+
+subroutine py_exgcssc (idexo, incnt, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(out) :: incnt (*)
+  integer, intent(out) :: ierr
+  call <-exgcssc-> (idexo, incnt, ierr)
+end subroutine py_exgcssc
+
+subroutine py_exgtim (idexo, nstep, time, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nstep
+  real, intent(out) :: time
+  integer, intent(out) :: ierr
+  call <-exgtim-> (idexo, nstep, time, ierr)
+end subroutine py_exgtim
+
+subroutine py_exgvan (idexo, vartyp, nvar, names, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  character*1, intent(in) :: vartyp
+  integer, intent(in) :: nvar
+  character*32, intent(out) :: names (nvar)
+  integer, intent(out) :: ierr
+  call <-exgvan-> (idexo, vartyp, nvar, names, ierr)
+end subroutine py_exgvan
+
+subroutine py_exgvnm (idexo, vartyp, nvar, name, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  character*1, intent(in) :: vartyp
+  integer, intent(in) :: nvar
+  character*32, intent(out) :: name
+  integer, intent(out) :: ierr
+  call <-exgvnm-> (idexo, vartyp, nvar, name, ierr)
+end subroutine py_exgvnm
+
+subroutine py_expvnm (idexo, vartyp, nvar, name, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  character*1, intent(in) :: vartyp
+  integer, intent(in) :: nvar
+  character*32, intent(out) :: name
+  integer, intent(out) :: ierr
+  call <-expvnm-> (idexo, vartyp, nvar, name, ierr)
+end subroutine py_expvnm
+
+subroutine py_exgvp (idexo, vartyp, nvar, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  character*1, intent(in) :: vartyp
+  integer, intent(out) :: nvar
+  integer, intent(out) :: ierr
+  call <-exgvp-> (idexo, vartyp, nvar, ierr)
+end subroutine py_exgvp
+
+subroutine py_exgvtt (idexo, nelblk, nvarel, isevok, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nelblk
+  integer, intent(in) :: nvarel
+  integer, intent(out) :: isevok(nvarel, nelblk)
+  integer, intent(out) :: ierr
+  call <-exgvtt-> (idexo, nelblk, nvarel, isevok, ierr)
+end subroutine py_exgvtt
+
+subroutine py_exgnstt (idexo, nblk, nvar, isvok, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nblk
+  integer, intent(in) :: nvar
+  integer, intent(out) :: isvok(*)
+  integer, intent(out) :: ierr
+  call <-exgnstt-> (idexo, nblk, nvar, isvok, ierr)
+end subroutine py_exgnstt
+
+subroutine py_exgsstt (idexo, nblk, nvar, isvok, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nblk
+  integer, intent(in) :: nvar
+  integer, intent(out) :: isvok(*)
+  integer, intent(out) :: ierr
+  call <-exgsstt-> (idexo, nblk, nvar, isvok, ierr)
+end subroutine py_exgsstt
+
+subroutine py_exinq (idexo, infreq, intret, relret, chrret, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: infreq
+  integer, intent(out) :: intret
+  real, intent(out) :: relret
+  character*32, intent(out) :: chrret
+  integer, intent(out) :: ierr
+  call <-exinq-> (idexo, infreq, intret, relret, chrret, ierr)
+end subroutine py_exinq
+
+subroutine py_exopts (optval, ierr)
+  implicit none
+  integer, intent(in) :: optval
+  integer, intent(out) :: ierr
+  call <-exopts-> (optval, ierr)
+end subroutine py_exopts
+
+subroutine py_expcns (idexo, idnpss, nnnps, ndnps, ixnnps, ixdnps, ltnnps, facnps, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idnpss (*)
+  integer, intent(in) :: nnnps (*)
+  integer, intent(in) :: ndnps (*)
+  integer, intent(in) :: ixnnps (*)
+  integer, intent(in) :: ixdnps (*)
+  integer, intent(in) :: ltnnps (*)
+  real, intent(in) :: facnps (*)
+  integer, intent(out) :: ierr
+  call <-expcns-> (idexo, idnpss, nnnps, ndnps, ixnnps, ixdnps, ltnnps, facnps, ierr)
+end subroutine py_expcns
+
+subroutine py_expcon (idexo, ncoor, nameco, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: ncoor
+  character*32, intent(in) :: nameco (ncoor)
+  integer, intent(out) :: ierr
+  call <-expcon-> (idexo, nameco, ierr)
+end subroutine py_expcon
+
+subroutine py_expcor (idexo, xn, yn, zn, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  real, intent(in) :: xn (*)
+  real, intent(in) :: yn (*)
+  real, intent(in) :: zn (*)
+  integer, intent(out) :: ierr
+  call <-expcor-> (idexo, xn, yn, zn, ierr)
+end subroutine py_expcor
+
+subroutine py_expcss (idexo, idesss, nsess, ndess, ixeess, ixdess, lteess, ltsess, facess, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idesss (*)
+  integer, intent(in) :: nsess (*)
+  integer, intent(in) :: ndess (*)
+  integer, intent(in) :: ixeess (*)
+  integer, intent(in) :: ixdess (*)
+  integer, intent(in) :: lteess (*)
+  integer, intent(in) :: ltsess (*)
+  real, intent(in) :: facess (*)
+  integer, intent(out) :: ierr
+  call <-expcss-> (idexo, idesss, nsess, ndess, ixeess, ixdess, lteess, &
+       ltsess, facess, ierr)
+end subroutine py_expcss
+
+subroutine py_expeat (idexo, idelb, atrib, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idelb
+  real, intent(in) :: atrib(*)
+  integer, intent(out) :: ierr
+  call <-expeat-> (idexo, idelb, atrib, ierr)
+end subroutine py_expeat
+
+subroutine py_expean (idexo, idelb, nattr, names, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idelb
+  integer, intent(in) :: nattr
+  character* (*), intent(in) :: names (*)
+  integer, intent(out) :: ierr
+  call <-expean-> (idexo, idelb, nattr, names, ierr)
+end subroutine py_expean
+
+subroutine py_expclb (idexo, idelb, namelb, numelb, numlnk, numatr, mkmap, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idelb(*)
+  character*(*), intent(in) :: namelb(*)
+  integer, intent(in) :: numelb(*)
+  integer, intent(in) :: numlnk(*)
+  integer, intent(in) :: numatr(*)
+  integer, intent(in) :: mkmap
+  integer, intent(out) :: ierr
+  call <-expclb-> (idexo, idelb, namelb, numelb, numlnk, numatr, mkmap, ierr)
+end subroutine py_expclb
+
+subroutine py_expelb (idexo, idelb, namelb, numelb, numlnk, numatr, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idelb
+  character* (*), intent(in) :: namelb
+  integer, intent(in) :: numelb
+  integer, intent(in) :: numlnk
+  integer, intent(in) :: numatr
+  integer, intent(out) :: ierr
+  call <-expelb-> (idexo, idelb, namelb, numelb, numlnk, numatr, ierr)
+end subroutine py_expelb
+
+subroutine py_expelc (idexo, idelb, link, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idelb
+  integer, intent(in) :: link (*)
+  integer, intent(out) :: ierr
+  call <-expelc-> (idexo, idelb, link, ierr)
+end subroutine py_expelc
+
+subroutine py_expecpp (idexo, itype, idelb, counts, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: itype
+  integer, intent(in) :: idelb
+  integer, intent(in) :: counts (*)
+  integer, intent(out) :: ierr
+  call <-expecpp-> (idexo, itype, idelb, counts, ierr)
+end subroutine py_expecpp
+
+subroutine py_expenm (idexo, mapel, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: mapel (*)
+  integer, intent(out) :: ierr
+  call <-expenm-> (idexo, mapel, ierr)
+end subroutine py_expenm
+
+subroutine py_expem (idexo, mapid, mapel, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: mapid
+  integer, intent(in) :: mapel (*)
+  integer, intent(out) :: ierr
+  call <-expem-> (idexo, mapid, mapel, ierr)
+end subroutine py_expem
+
+subroutine py_exppem (idexo, mapid, istart, icount, mapel, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: mapid
+  integer, intent(in) :: istart
+  integer, intent(in) :: icount
+  integer, intent(in) :: mapel (*)
+  integer, intent(out) :: ierr
+  call <-exppem-> (idexo, mapid, istart, icount, mapel, ierr)
+end subroutine py_exppem
+
+subroutine py_expev (idexo, istep, ixelev, idelb, numelb, valev, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: istep
+  integer, intent(in) :: ixelev
+  integer, intent(in) :: idelb
+  integer, intent(in) :: numelb
+  real, intent(in) :: valev (*)
+  integer, intent(out) :: ierr
+  call <-expev-> (idexo, istep, ixelev, idelb, numelb, valev, ierr)
+end subroutine py_expev
+
+subroutine py_expnsv (idexo, istep, ixv, id, num, val, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: istep
+  integer, intent(in) :: ixv
+  integer, intent(in) :: id
+  integer, intent(in) :: num
+  real, intent(in) :: val (*)
+  integer, intent(out) :: ierr
+  call <-expnsv-> (idexo, istep, ixv, id, num, val, ierr)
+end subroutine py_expnsv
+
+subroutine py_expssv (idexo, istep, ixv, id, num, val, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: istep
+  integer, intent(in) :: ixv
+  integer, intent(in) :: id
+  integer, intent(in) :: num
+  real, intent(in) :: val (*)
+  integer, intent(out) :: ierr
+  call <-expssv-> (idexo, istep, ixv, id, num, val, ierr)
+end subroutine py_expssv
+
+subroutine py_expgv (idexo, istep, nvargl, valgv, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: istep
+  integer, intent(in) :: nvargl
+  real, intent(in) :: valgv (*)
+  integer, intent(out) :: ierr
+  call <-expgv-> (idexo, istep, nvargl, valgv, ierr)
+end subroutine py_expgv
+
+subroutine py_expinf (idexo, ninfo, info, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: ninfo
+  character*80, intent(in) :: info (ninfo)
+  integer, intent(out) :: ierr
+  call <-expinf-> (idexo, ninfo, info, ierr)
+end subroutine py_expinf
+
+subroutine py_expini (idexo, title, ndim, numnp, numel, nelblk, numnps, numess, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  character* (*), intent(in) :: title
+  integer, intent(in) :: ndim
+  integer, intent(in) :: numnp
+  integer, intent(in) :: numel
+  integer, intent(in) :: nelblk
+  integer, intent(in) :: numnps
+  integer, intent(in) :: numess
+  integer, intent(out) :: ierr
+  call <-expini-> (idexo, title, ndim, numnp, numel, nelblk, numnps, numess, ierr)
+end subroutine py_expini
+
+subroutine py_expmap (idexo, mapel, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: mapel (*)
+  integer, intent(out) :: ierr
+  call <-expmap-> (idexo, mapel, ierr)
+end subroutine py_expmap
+
+subroutine py_expnnm (idexo, mapnod, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: mapnod (*)
+  integer, intent(out) :: ierr
+  call <-expnnm-> (idexo, mapnod, ierr)
+end subroutine py_expnnm
+
+subroutine py_expnm (idexo, mapid, mapnod, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: mapid
+  integer, intent(in) :: mapnod (*)
+  integer, intent(out) :: ierr
+  call <-expnm-> (idexo, mapid, mapnod, ierr)
+end subroutine py_expnm
+
+subroutine py_expnp (idexo, idnps, nnnps, ndnps, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idnps
+  integer, intent(in) :: nnnps
+  integer, intent(in) :: ndnps
+  integer, intent(out) :: ierr
+  call <-expnp-> (idexo, idnps, nnnps, ndnps, ierr)
+end subroutine py_expnp
+
+subroutine py_expns (idexo, idnps, ltnnps, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idnps
+  integer, intent(in) :: ltnnps (*)
+  integer, intent(out) :: ierr
+  call <-expns-> (idexo, idnps, ltnnps, ierr)
+end subroutine py_expns
+
+subroutine py_expnsd (idexo, idnps, facnps, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idnps
+  real, intent(in) :: facnps (*)
+  integer, intent(out) :: ierr
+  call <-expnsd-> (idexo, idnps, facnps, ierr)
+end subroutine py_expnsd
+
+subroutine py_expnv (idexo, istep, ixnodv, numnp, valnv, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: istep
+  integer, intent(in) :: ixnodv
+  integer, intent(in) :: numnp
+  real, intent(in) :: valnv (*)
+  integer, intent(out) :: ierr
+  call <-expnv-> (idexo, istep, ixnodv, numnp, valnv, ierr)
+end subroutine py_expnv
+
+subroutine py_expp (idexo, itype, id, namepr, ival, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: itype
+  integer, intent(in) :: id
+  character*32, intent(in) :: namepr
+  integer, intent(in) :: ival
+  integer, intent(out) :: ierr
+  call <-expp-> (idexo, itype, id, namepr, ival, ierr)
+end subroutine py_expp
+
+subroutine py_exppa (idexo, itype, namepr, ival, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: itype
+  character*32, intent(in) :: namepr
+  integer, intent(in) :: ival (*)
+  integer, intent(out) :: ierr
+  call <-exppa-> (idexo, itype, namepr, ival, ierr)
+end subroutine py_exppa
+
+subroutine py_exppn (idexo, itype, nprops, namepr, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: itype
+  integer, intent(in) :: nprops
+  character*32, intent(in) :: namepr (nprops)
+  integer, intent(out) :: ierr
+  call <-exppn-> (idexo, itype, nprops, namepr, ierr)
+end subroutine py_exppn
+
+subroutine py_expqa (idexo, nqarec, qarec, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nqarec
+  character* (*), intent(in) :: qarec (4,*)
+  integer, intent(out) :: ierr
+  call <-expqa-> (idexo, nqarec, qarec, ierr)
+end subroutine py_expqa
+
+subroutine py_expsp (idexo, idess, nsess, ndess, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idess
+  integer, intent(in) :: nsess
+  integer, intent(in) :: ndess
+  integer, intent(out) :: ierr
+  call <-expsp-> (idexo, idess, nsess, ndess, ierr)
+end subroutine py_expsp
+
+subroutine py_expss (idexo, idess, lteess, ltsess, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idess
+  integer, intent(in) :: lteess (*)
+  integer, intent(in) :: ltsess (*)
+  integer, intent(out) :: ierr
+  call <-expss-> (idexo, idess, lteess, ltsess, ierr)
+end subroutine py_expss
+
+subroutine py_expssd (idexo, idess, facess, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: idess
+  real, intent(in) :: facess (*)
+  integer, intent(out) :: ierr
+  call <-expssd-> (idexo, idess, facess, ierr)
+end subroutine py_expssd
+
+subroutine py_exptim (idexo, nstep, time, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nstep
+  real, intent(in) :: time
+  integer, intent(out) :: ierr
+  call <-exptim-> (idexo, nstep, time, ierr)
+end subroutine py_exptim
+
+subroutine py_expvan (idexo, vartyp, nvar, names, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  character*1, intent(in) :: vartyp
+  integer, intent(in) :: nvar
+  character*32, intent(in) :: names (nvar)
+  integer, intent(out) :: ierr
+  call <-expvan-> (idexo, vartyp, nvar, names, ierr)
+end subroutine py_expvan
+
+subroutine py_expvp (idexo, vartyp, nvar, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  character*1, intent(in) :: vartyp
+  integer, intent(in) :: nvar
+  integer, intent(out) :: ierr
+  call <-expvp-> (idexo, vartyp, nvar, ierr)
+end subroutine py_expvp
+
+subroutine py_expvtt (idexo, nelblk, nvarel, isevok, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nelblk
+  integer, intent(in) :: nvarel
+  integer, intent(in) :: isevok (*)
+  integer, intent(out) :: ierr
+  call <-expvtt-> (idexo, nelblk, nvarel, isevok, ierr)
+end subroutine py_expvtt
+
+subroutine py_expnstt (idexo, nblk, nvar, isvok, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nblk
+  integer, intent(in) :: nvar
+  integer, intent(in) :: isvok (*)
+  integer, intent(out) :: ierr
+  call <-expnstt-> (idexo, nblk, nvar, isvok, ierr)
+end subroutine py_expnstt
+
+subroutine py_expsstt (idexo, nblk, nvar, isvok, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nblk
+  integer, intent(in) :: nvar
+  integer, intent(in) :: isvok (*)
+  integer, intent(out) :: ierr
+  call <-expsstt-> (idexo, nblk, nvar, isvok, ierr)
+end subroutine py_expsstt
+
+subroutine py_exgnams (idexo, itype, nvar, nnames, names, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nvar
+  integer, intent(in) :: nnames
+  integer, intent(in) :: itype
+  character*32, intent(out) :: names (nnames)
+  integer, intent(out) :: ierr
+  call <-exgnams-> (idexo, itype, nvar, names, ierr)
+end subroutine py_exgnams
+
+subroutine py_expnams (idexo, itype, nvar, names, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(in) :: nvar
+  integer, intent(in) :: itype
+  character* (*), intent(in) :: names (*)
+  integer, intent(out) :: ierr
+  call <-expnams-> (idexo, itype, nvar, names, ierr)
+end subroutine py_expnams
+
+subroutine py_exupda (idexo, ierr)
+  implicit none
+  integer, intent(in) :: idexo
+  integer, intent(out) :: ierr
+  call <-exupda-> (idexo, ierr)
+end subroutine py_exupda
+
+subroutine py_excopy (idexo1, idexo2, ierr)
+  implicit none
+  integer, intent(in) :: idexo1
+  integer, intent(in) :: idexo2
+  integer, intent(out) :: ierr
+  call <-excopy-> (idexo1, idexo2, ierr)
+end subroutine py_excopy
+
+integer function py_excre (path, icmode, icompws, iows, ierr)
+  implicit none
+  character* (*), intent(in) :: path
+  integer, intent(in) :: icmode
+  integer, intent(inout) :: icompws
+  integer, intent(inout) :: iows
+  integer, intent(out) :: ierr
+  integer :: <-excre->
+  py_excre = <-excre-> (path, icmode, icompws, iows, ierr)
+end function py_excre
+
+integer function py_exopen (path, imode, icompws, iows, vers, ierr)
+  implicit none
+  character* (*), intent(in) :: path
+  integer, intent(in) :: imode
+  integer, intent(inout) :: icompws
+  integer, intent(inout) :: iows
+  real, intent(out) :: vers
+  integer, intent(out) :: ierr
+  integer :: <-exopen->
+  py_exopen = <-exopen-> (path, imode, icompws, iows, vers, ierr)
+end function py_exopen
+
+integer function py_exlgmd (idexo)
+  implicit none
+  integer, intent(in) :: idexo
+  integer :: <-exlgmd->
+  py_exlgmd = <-exlgmd-> (idexo)
+end function py_exlgmd

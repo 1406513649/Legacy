@@ -1,0 +1,170 @@
+if [ -f /etc/bashrc ]; then
+        . /etc/bashrc
+fi
+
+if [ ! -n "${PS1+x}" ]; then
+  return
+fi
+
+clear
+
+uname=$(uname)
+case ${uname} in
+    'Darwin')
+        DOT_LOCAL=${HOME}/.local.d
+        ;;
+    *)
+        DOT_LOCAL=${HOME}/.local.d
+        ;;
+esac
+export DOT_LOCAL
+
+BOOKMARKS=${DOT_LOCAL}/bin/bookmark_manager.py
+go(){ eval `${BOOKMARKS} $*`; }
+export -f go
+
+fdef(){
+    # display function definition
+    declare -f "$@"
+}
+
+#-------------------------------------------------------------
+# Automatic setting of $DISPLAY (if not set already).
+# This works for linux - your mileage may vary. ...
+# The problem is that different types of terminals give
+# different answers to 'who am i' (rxvt in particular can be
+# troublesome).
+# I have not found a 'universal' method yet.
+#-------------------------------------------------------------
+function get_xserver ()
+{
+    case $TERM in
+       xterm )
+            XSERVER=$(who am i | awk '{print $NF}' | tr -d ')''(' )
+            XSERVER=${XSERVER%%:*}
+            ;;
+       xterm-color | xterm-256color )
+            XSERVER=''
+            ;;
+        aterm | rxvt)
+        # Find some code that works here. ...
+            ;;
+    esac
+}
+if [ -z ${DISPLAY:=""} ]; then
+    get_xserver
+    if [[ -z ${XSERVER}  || ${XSERVER} == $(hostname) || \
+      ${XSERVER} == "unix" ]]; then
+        DISPLAY=":0.0"          # Display on local host.
+    else
+        DISPLAY=${XSERVER}:0.0  # Display on remote host.
+    fi
+fi
+
+# profile load default
+
+if [[ $HOSTNAME == "raptor"? ]]
+then
+    export DISPLAY=`echo "$DISPLAY" | sed "s/localhost/::1/"`
+fi
+
+function setprompt ()
+{
+        a='_'
+        for i in {1..94}; do a='_'${a}; done
+        b=${1}"!!!->"
+        PS1="$a\n\w\n\u@\[\e[50;1m\]\h\n"$b" \[\e[0m\]"
+        export PS1
+}
+setprompt 'TYPE HERE'
+
+#Auto tab completion, with color!
+set color
+set colorcat
+
+#trick for fixing bash pattern matching bug (in which it will return 'no match'
+#for `ls file* junk` when junk exists but no file* exist.
+set nonomatch
+
+# --- Settings
+ulimit -S -c 0 # Don't want any coredumps.
+set -o notify
+set -o ignoreeof
+#set -o nounset
+
+# --- Enable options:
+shopt -s expand_aliases
+shopt -s cdspell
+shopt -s cdable_vars
+shopt -s checkhash
+shopt -s checkwinsize
+shopt -s sourcepath
+shopt -s no_empty_cmd_completion
+shopt -s cmdhist
+shopt -s histappend histreedit histverify
+shopt -s extglob    # Necessary for programmable completion.
+
+# --- Disable options:
+shopt -u mailwarn
+unset MAILCHECK  # Don't want my shell to warn me of incoming mail.
+
+export TIMEFORMAT=$"\nreal %3R\tuser %3U\tsys %3S\tpcpu %P\n"
+export EDITOR=vim
+
+case "${HOSTNAME}" in
+    (mutrino)
+        export ftp_proxy=wwwproxy.sandia.gov:80
+        export http_proxy=wwwproxy.sandia.gov:80
+        export https_proxy=wwwproxy.sandia.gov:80
+        module load python/3.5-anaconda-4.1.1
+        module load git/2.11.0
+        ;;
+    (ceerws*)
+        if [ -f ${HOME}/.swx/apps/pymod/init/bash ]; then
+            module avail 2> grep anaconda
+            module unuse /projects/sems/modulefiles/projects
+            module unuse /usr/local/modules/3.2.10/Modules/versions
+            module unuse /usr/local/modules/3.2.10/Modules/\$MODULE_VERSION/modulefiles
+            module unuse /usr/local/modules/3.2.10/Modules/modulefiles
+            module unuse /usr/local/modules/3.2.10/Modules/3.2.10/modulefiles
+            module unuse /usr/share/Modules/modulefiles
+            module unuse /etc/modulefiles
+            export PYMOD_PKG=${HOME}/.swx/apps/pymod
+            . ${PYMOD_PKG}/init/bash
+            export MODULEPATH=${DOT_LOCAL}/etc/modulefiles/core:$MODULEPATH
+        fi
+        module load mydefault
+        module load anaconda/3.5 || :
+        ;;
+    (s1*)
+        if [ -f /opt/apps/pymod/init/bash ]; then
+            export PYMOD_PKG=/opt/apps/pymod
+            export TCL_MODULESHOME=/opt/apps/modules/Modules/3.2.10
+            . ${PYMOD_PKG}/init/bash
+            export MODULEPATH=${DOT_LOCAL}/etc/modulefiles/core:$MODULEPATH
+        fi
+        module load mydefault
+        module load anaconda/3.5 || :
+        ;;
+    (*)
+        # Probably on some test bed - use the standard environment
+        echo "Unknown HOSTNAME"
+        ;;
+esac
+
+# SEMs modules
+# if [ -f /projects/modulefiles/utils/sems-modules-init.sh ]; then
+#       . /projects/modulefiles/utils/sems-modules-init.sh
+# fi
+
+if [ -f ${DOT_LOCAL}/bin/parse_calendar.py ]; then
+    ${DOT_LOCAL}/bin/parse_calendar.py
+fi
+
+alias modulegrep='module --terse avail 2>&1 | grep -i'
+alias lmodulegrep='module spider 2>&1 | grep -i'
+
+
+# Local Variables:
+# mode: shell-script
+# End:

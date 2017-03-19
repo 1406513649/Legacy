@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+##
+## dot modulefile
+##
+description = ('Adds "." to your PATH environment variable\n'
+               'This makes it easy to add the current working directory\n'
+               'to your PATH environment variable.  This allows you to\n'
+               'run executables in your current working directory\n'
+               'without prepending ./ to the excutable name\n')
+
+whatis = 'adds "." to your PATH environment variable'
+
+append_path('PATH', '.')
+

@@ -1,0 +1,230 @@
+#!/usr/bin/env python
+import os
+import os.path as op
+import re
+import sys
+import shutil
+import zipfile
+import tarfile
+import argparse
+from subprocess import Popen, PIPE
+import multiprocessing as mp
+
+
+D = os.path.dirname(os.path.realpath(__file__))
+VC = (".git", ".svn")
+ARCH = (".zip", ".gz", ".tar.gz", ".tar", ".xlsx")
+SKIP = [".pyc", ".o", ".so", ".x", ".pyo", ".exe", ".mod",
+        ".a", ".ps", ".pdf", ".his", ".exo", ".g", ".gen"]
+CWD = os.getcwd()
+REPL = None
+
+
+def isarch(f):
+    ext = os.path.splitext(f)[1]
+    if ext in ARCH:
+        return True
+    return False
+
+
+def good(f, b=False):
+    if not op.isfile(f):
+        return False
+    if b:
+        return True
+    return not is_binary(f)
+
+
+def is_binary(path):
+    tmp = Popen("file -b '{0}'".format(path), shell=True, stdout=PIPE)
+    tmp.wait()
+    return "text" not in str(tmp.communicate()[0])
+
+
+def main(argv):
+    description = "search for patterns in files in a directory hierarchy"
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("root", help="Search path directory")
+    parser.add_argument("pats", nargs="+", help="Patterns")
+    parser.add_argument("-d", type=int, default=100000,
+                        help="Depth [default: inf]")
+    parser.add_argument("-S", default="",
+         help="File extensions to skip [default: {0}]".format(", ".join(SKIP)))
+    parser.add_argument("-s", default="",
+         help="File extensions to include [default: all]")
+    parser.add_argument("-e", default=False, action="store_true",
+         help="Case insensitive file extension [default: all]")
+    parser.add_argument("-B", action="store_true", default=False,
+                        help="Look in binary files [default: %(default)s]")
+    parser.add_argument("-a", action="store_true", default=False,
+                        help="Match any [default: %(default)s]")
+    parser.add_argument("-I", action="store_true", default=False,
+                        help="Case sensitive match [default: %(default)s]")
+    parser.add_argument("--vc", action="store_true", default=False,
+                        help="Search VC dirs [default: %(default)s]")
+    parser.add_argument("-j", action="store", default=1, type=int,
+                        help="Number of simultaneous jobs [default: %(default)s]")
+    parser.add_argument("-b", action="store_true", default=False,
+                        help="Search binary files [default: %(default)s]")
+    parser.add_argument("-o", action="store_true", default=False,
+                        help="Open found files with emacs [default: %(default)s]")
+    parser.add_argument("--skip-dir", action='append', default=[])
+    args = parser.parse_args(argv)
+
+    try:
+        rgrep(args.root, args.pats, S=args.S, s=args.s, e=args.e, B=args.B,
+              a=args.a, I=args.I, vc=args.vc, j=args.j, b=args.b, o=args.o,
+              skip_dir=args.skip_dir)
+    except KeyboardInterrupt:
+        pass
+
+def rgrep(root, pats, d=100000, S='', s='', e=False, B=False, a=False,
+        I=False, vc=False, j=1, b=False, o=False, skip_dir=[]):
+    root = op.realpath(root)
+    if not op.isdir(root) and not isarch(root):
+        parser.error("{0}: no such directory".format(root))
+
+    pats = [x.split() for x in pats]
+    regex = []
+    for item in pats:
+        if a:
+            pat = r"\b.*\b".join(["{0}".format(x) for x in item])
+        else:
+            pat = r".*".join([r"\b{0}\b".format(x) for x in item])
+        regex.append(pat)
+        continue
+    regex = r"|".join(regex)
+    regex = re.compile(regex, re.M) if I else re.compile(regex, re.M|re.I)
+
+    np = min(mp.cpu_count(), j)
+
+    fixext = lambda ext: ext if ext.startswith(".") else "." + ext
+    s = [fixext(x) for x in s.split() if x.split()]
+    S = [fixext(x) for x in S.split() if x.split()] + SKIP
+    if e:
+        s.extend([x.swapcase() for x in s])
+        s = list(set(s))
+    fargs = [regex, d, vc, s, S, b, skip_dir]
+    if isarch(root):
+        fargs.insert(0, root)
+        found = unarch_and_fgrep(fargs)
+        o = False
+    elif np == 1:
+        fargs.insert(0, root)
+        found = walk_and_fgrep(fargs)
+    else:
+        dirs = [op.join(root, x) for x in os.listdir(root)
+                if op.isdir(op.join(root, x))]
+        files = [op.join(root, x) for x in os.listdir(root)
+                 if op.isfile(op.join(root, x))]
+        found = fgrep(prune_files(files, s, S), regex, b)
+        if dirs:
+            fargs = [[x] + fargs for x in dirs]
+            pool = mp.Pool(processes=np)
+            found += sum(pool.map(walk_and_fgrep, fargs))
+            pool.close()
+            pool.join()
+    found = list(set(found))
+    print("{0:d} matches found".format(len(found)))
+
+    if o and found:
+        import imp
+        # open the files with te
+        sys.dont_write_bytecode = True
+        # Find the emacs directory
+        name = "open-editor"
+        pathname = os.path.join(D, name)
+        assert os.path.isfile(pathname)
+        te = imp.load_source(name, pathname)
+        sys.exit(te.main(found))
+
+    return found
+
+
+def walk_and_fgrep(args):
+    root, regex, depth, vc, include, skip, b, skip_dir = args
+    found = []
+    for dirnam, dirs, files in os.walk(root):
+        if os.path.basename(dirnam) in skip_dir:
+            print('skipping {0}'.format(dirnam))
+            del dirs[:]
+            continue
+        I = len(list(set(dirnam.split(os.sep)) - set(root.split(os.sep))))
+        if I == depth + 1:
+            del dirs[:]
+            continue
+        if not vc:
+            if any([x in VC for x in dirnam.split(os.sep)]):
+                del dirs[:]
+                continue
+            for item in VC:
+                if item in dirs:
+                    dirs.remove(item)
+                continue
+        files = [op.join(dirnam, x) for x in files]
+        found.extend(fgrep(prune_files(files, include, skip), regex, b))
+        continue
+    return found
+
+
+def f_repl_names(f, *args):
+    return "{0}:{1}".format(args[1], f.replace(args[0], "").lstrip(os.path.sep))
+
+
+def unarch_and_fgrep(args):
+    import tempfile
+    global REPL
+    ddd = tempfile.mkdtemp()
+    arch_file = args[0]
+    fff = os.path.basename(arch_file)
+    REPL = (ddd, fff)
+
+    # open write kind of archive
+    ext = os.path.splitext(arch_file)[1]
+    if ext in (".zip", ".xlsx"):
+        fh = zipfile.ZipFile(arch_file, "r")
+    else:
+        fh = tarfile.open(arch_file, "r")
+    fh.extractall(ddd)
+    fh.close()
+
+    # walk and grep files
+    walk_and_fgrep_args = [ddd] + [i for i in args[1:]]
+    found = walk_and_fgrep(walk_and_fgrep_args)
+
+    # modify found to remove the temp directory name
+    found = [f_repl_names(f, *REPL) for f in found]
+    shutil.rmtree(ddd)
+    REPL = None
+    return found
+
+
+def prune_files(files, include, skip):
+    # prune files
+    if include:
+        return [f for f in files if op.splitext(f)[1] in include]
+    else:
+        return [f for f in files if op.splitext(f)[1] not in skip]
+
+
+def fgrep(files, regex, b=False):
+    found = []
+    for f in [x for x in files if good(x, b)]:
+        try:
+            if regex.search(open(f).read()):
+                found.append(f)
+                if REPL is not None:
+                    print(f_repl_names(f, *REPL))
+                else:
+                    print(f.replace(CWD, "."))
+        except UnicodeDecodeError:
+            pass
+        continue
+    return found
+
+"""A verY strangle stringy For
+testing if This 'actually' Worx!"""
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

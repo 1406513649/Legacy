@@ -1,0 +1,63 @@
+c---.----1----.----2----.----3----.----4----.----5----.----6----.----7--
+      SUBROUTINE GEORGE( )
+************************************************************************
+C     PURPOSE: This routine ....
+C
+C input
+C -----
+C    VAR: description
+C
+C input and output
+C ----------------
+C    VAR: description
+C
+C output
+C -----
+C    VAR: description
+C
+C  
+C  AUTHORS
+C  tjf:Timothy J. Fuller:theory, algorithm, and code
+C
+C  MODIFICATION HISTORY
+C  yymmdd|who|what was done
+C  ------ --- -------------
+C  chngme|tjf|created routine
+C
+      include 'implicit.h'
+C.............................................................parameters
+      include 'numpar.h'
+C.................................................................common
+c.................................................................passed
+C..............................................................functions
+C...............................................................external      
+c..........................................................local scalars
+c...........................................................local arrays
+C..................................................................saved
+C...................................................................data
+C....................................................statement functions
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+c
+c Do not remove the "dots" after the backslashes. It confuses
+c the c-preprocessor when a line ends in a backslash.
+        _____________________________________________________________   
+     ../                                                             \..
+     ./                                                               \.
+      DO 100 I=1,N
+        .
+        .
+        .
+  100 CONTINUE
+C    .\                                                               /.
+C    ..\_____________________________________________________________/..
+
+
+!      write(66,*)' _______________________________ ',knt
+!      write(66,*)'\/                               \\'
+
+
+!      write(66,*)'\\_______________________________\/'
+
+      RETURN
+      END ! SUBROUTINE GEORGE
+C---.----1----.----2----.----3----.----4----.----5----.----6----.----7--

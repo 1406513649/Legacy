@@ -1,0 +1,116 @@
+if v:progname =~? "evim"
+  finish
+endif
+
+set nocompatible        " Use vim settings and not vi settings
+set backspace=indent,eol,start   "Allow backspace to rule all
+set number     		" Show line numbers
+set history=50		" keep 50 lines of command line history
+set ruler		" show the cursor position all the time
+set showcmd		" display incomplete commands
+set incsearch		" do incremental searching
+set ic			" case insensitive search
+set spell 		" Turn on spell checking
+set title		" Show title in console title bar
+set expandtab  		" Tabs converted to to spaces
+set grepprg=grep\ -nH\ $*
+set sm			" Show matching braces
+let maplocalleader=","
+let g:org_heading_shade_leading_stars = 1
+let g:utl_cfg_hdl_scm_http_system = "silent !open -a Safari '%u'"
+
+execute pathogen#infect()
+
+" Use case insensitive search, except when using capital letters
+set ignorecase
+set smartcase
+
+" set up color scheme
+syntax on
+
+" Highlight searches
+set hlsearch
+
+let g:tex_flavor='latex'
+" Specific file type stuff
+if has("autocmd")
+  filetype plugin indent on
+  filetype plugin on
+  autocmd FileType cpp setlocal shiftwidth=2 tabstop=2
+  augroup vimrcEx
+  au!
+  autocmd FileType text setlocal textwidth=78
+  autocmd BufReadPost *
+    \ if line("'\"") > 0 && line("'\"") <= line("$") |
+    \   exe "normal g`\"" |
+    \ endif
+  augroup END
+else
+  set autoindent		" always set autoindenting on
+  set shiftwidth=4
+  set softtabstop=4
+endif " has("autocmd")
+
+" Functions:
+" toggle on/off syntax highlight
+function ToggleHLSearch()
+	if &hls
+		set nohls
+	else
+		set hls
+	endif
+endfunction
+
+set modeline
+set modelines=5
+
+"Formatting
+set autoindent
+set formatoptions=1tcq "a
+set lbr
+set wrap
+set whichwrap+=<,>,h,l,[,]
+noremap j gj
+noremap k gk
+
+
+map <silent> <C-k> <Esc>:call ToggleHLSearch()<CR>
+imap <silent> <C-k> <Esc>:call ToggleHLSearch()<CR>
+
+imap ,e <esc>
+
+set backupskip=/tmp/*,/private/tmp/*"
+set backup		" keep a backup file
+set backupdir=$HOME/.local.d/var/tmp/backups.d//
+set directory=$HOME/.local.d/var/tmp/swp.d//
+set undodir=$HOME/.local.d/var/tmp/undo.d//
+
+set wildmode=longest,list,full
+set wildmenu
+
+" Always display the status line, even if only one window is displayed
+set laststatus=2
+
+" Instead of failing a command because of unsaved changes, instead raise a
+" dialogue asking if you wish to save changed files.
+set confirm
+
+" Use visual bell instead of beeping when doing something wrong
+set visualbell
+
+" And reset the terminal code for the visual bell.
+set t_vb=
+
+" Stop certain movements from always going to the first character of a line.
+set nostartofline
+
+set colorcolumn=80
+highlight ColorColumn ctermbg=darkgray
+
+" Map Y to act like D and C, i.e. to yank until EOL, rather than act as yy,
+" which is the default
+map Y y$
+
+" Map <C-L> (redraw screen) to also turn off search highlighting until the
+" next search
+nnoremap <C-L> :nohl<CR><C-L>

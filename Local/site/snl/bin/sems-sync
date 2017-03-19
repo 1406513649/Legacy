@@ -1,0 +1,165 @@
+#!/usr/bin/env python
+import os
+import sys
+from argparse import ArgumentParser
+from subprocess import Popen, STDOUT
+import multiprocessing as mp
+
+HOME = os.path.expanduser("~")
+ROOT1 = os.path.join('/net/sherlock/storage/fast/projects')
+ROOT2 = None
+LOG_DIR = None
+
+def main():
+    global ROOT2, LOG_DIR
+    p = ArgumentParser()
+    p.add_argument("--no-delete", default=False, action="store_true")
+    p.add_argument("--dryrun", default=False, action="store_true")
+    p.add_argument("--rhel", default=False, action="store_true")
+    p.add_argument("--tpl-only", default=False, action="store_true")
+    p.add_argument("-j", default=4, type=int)
+    args = p.parse_args()
+
+    platform = "rhel7-x86_64" if args.rhel else "Darwin10.11-x86_64"
+    if args.rhel:
+        ROOT2 = '/opt/sems/linux/sems'
+    else:
+        ROOT2 = '/opt/sems/darwin/sems'
+    LOG_DIR = os.path.join(ROOT2, '.sems-sync-logs')
+    if not os.path.isdir(LOG_DIR):
+        os.makedirs(LOG_DIR)
+
+    # Sync the following directories
+    dirs_to_sync = ("modulefiles",
+                    "sems/install/{0}/dakota".format(platform),
+                    "sems/install/{0}/sems/compiler/**".format(platform),
+                    "sems/install/{0}/sems/tpl/*".format(platform),
+                    "sems/install/{0}/sems/utility/*".format(platform),
+                    "sems/modulefiles/{0}".format(platform),
+                    "sems/modulefiles/common_tcl",
+                    "sems/modulefiles/projects",
+                    "sems/modulefiles/templates",
+                    "sems/modulefiles/utils")
+
+    if args.rhel:
+        dirs_to_sync = [x for x in dirs_to_sync if 'dakota' not in x]
+
+    if args.tpl_only:
+        dirs_to_sync = [x for x in dirs_to_sync if 'tpl' in x]
+
+    delete = not args.no_delete
+    dryrun = args.dryrun
+    numproc = 1 if dryrun else args.j
+
+    print('Finding directories to sync', end='... ')
+    paired_dirs_to_sync = []
+    for dir_to_sync in dirs_to_sync:
+        root_path = os.path.join(ROOT1, dir_to_sync)
+        dest_path = os.path.join(ROOT2, dir_to_sync)
+        if not dir_to_sync.endswith('*'):
+            paired_dirs_to_sync.append((root_path, dest_path))
+            continue
+        n = root_path.count('*')
+        root_path = root_path.rstrip('*')
+        dest_path = dest_path.rstrip('*')
+        more_dirs_to_sync = find_child_dirs(root_path, n)
+        for new_dir_to_sync in more_dirs_to_sync:
+            new_root_path = os.path.join(root_path, new_dir_to_sync)
+            new_dest_path = os.path.join(dest_path, new_dir_to_sync)
+            if skip_dir_sync(new_root_path, args.rhel):
+                continue
+            paired_dirs_to_sync.append((new_root_path, new_dest_path))
+    print('done')
+
+    print('Found a total of {0} directories'
+          'to sync'.format(len(paired_dirs_to_sync)))
+
+    args = [x + (delete, dryrun) for x in paired_dirs_to_sync]
+    if numproc <= 1:
+        results = [sync_directory(arg) for arg in args]
+    else:
+        pool = mp.Pool(processes=numproc)
+        results = pool.map(sync_directory, args)
+        pool.close()
+        pool.join()
+
+    for (returncode, d) in results:
+        if returncode == 0:
+            continue
+        print("The following directory failed to sync: {0}".format(d))
+
+    return 0
+
+
+def skip_dir_sync(directory, rhel):
+    # check for directories to skip
+    if 'tex' in directory:
+        return True
+    if 'intel' in directory:
+        return True
+    if rhel:
+        return False
+    to_skip = ('sems-astroid', 'sems-beautifulsoup4', 'sems-dateutil',
+               'sems-gprof2dot', 'sems-logilab', 'sems-matplotlib',
+               'sems-numpy', 'sems-pylint', 'sems-pyparsing',
+               'sems-pytz', 'sems-scipy', 'sems-scons', 'sems-setuptools',
+               'sems-six', 'sems-tex', 'sems-python')
+    if directory.endswith(to_skip):
+        return True
+    if directory.endswith(tuple([x[5:] for x in to_skip])):
+        return True
+    return False
+
+
+def sync_directory(args):
+    root_path, dest_path, delete, dryrun = args
+
+    assert os.path.isdir(root_path), root_path + " does not exist"
+    if not os.path.isdir(dest_path):
+        os.makedirs(dest_path)
+
+    # Option processing
+    rsync = "/usr/bin/rsync"
+    options = "-arvz"
+    if delete:
+        options += " --delete"
+    options += " --exclude 'intel*'"
+
+    command = "{0} {1} {2}/ {3}/".format(rsync, options, root_path, dest_path)
+    end = '\n' if not dryrun else ''
+    print("  SYNCING:  {0}\n"
+          "     WITH:  {1}{2}".format(root_path, dest_path, end))
+
+    if dryrun:
+        print('    --->    {0}\n'.format(command))
+        return (0, os.path.basename(root_path))
+
+    # Sync the thing
+    log_file = os.path.join(LOG_DIR, os.path.basename(root_path))
+    with open(log_file, 'w') as fh:
+        proc = Popen(command.split(), stdout=fh, stderr=STDOUT)
+        proc.wait()
+
+    success = 'SUCCESS' if proc.returncode == 0 else 'FAILED'
+    print("  SYNCING:  {0}\n"
+          "     WITH:  {1}{2}"
+          "     STAT:  {3}\n".format(root_path, dest_path, end, success)
+          )
+    return [proc.returncode, os.path.basename(root_path)]
+
+
+def find_child_dirs(d, depth):
+    first_depth = [x for x in os.listdir(d) if os.path.isdir(os.path.join(d, x))]
+    if depth == 1:
+        return first_depth
+    elif depth == 2:
+        child_dirs = []
+        for x in first_depth:
+            second_depth = find_child_dirs(os.path.join(d, x), 1)
+            child_dirs.extend(os.path.join(x, x1) for x1 in second_depth)
+        return child_dirs
+    raise Exception('Unknown depth')
+
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+
+def help():
+    return ('{module_name} - loads the {name} environment\n'
+            '\tThe following env variables are modified:\n'
+            '\t$prefix/scripts to $PATH\n'
+            '\tThe following env variables are added:\n'
+            '\t$ATK_LICENSE_PATH to $ALTAIR_LICENSE_PATH\n'
+            '\tVersion {version}\n')
+
+def whatis():
+    return 'loads the {name} environment'
+
+prereq('atk1')
+name = 'Altair HyperWorks'
+version = '14.0'
+
+if 'darwin' in PLATFORM:
+    prefix = '/Applications/AltairHyperWorks/{0}/altair'.format(version)
+    almutil = '{0}/security/bin/macosx64/almutil'.format(prefix)
+else:
+    prefix = '/apps/altair/hyperworks/13.0.110/altair'
+    almutil = '{0}/security/bin/linux64/almutil'.format(prefix)
+
+if not exists(prefix):
+    raise_error('AltairHyperWorks directory not found')
+
+setenv('ALTAIR_LICENSE_PATH', os.environ['ATK_LICENSE_PATH'])
+
+set_alias('hmlic', '{0} -licstat'.format(almutil))
+set_alias('cpprof', 'cp {0}/Local/etc/HyperWorks/hmcustom.tcl .'.format(HOME))
+
+prepend_path('PATH', '{0}/scripts'.format(prefix))
+

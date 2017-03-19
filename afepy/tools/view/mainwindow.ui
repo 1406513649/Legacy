@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>698</width>
+    <height>538</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>698</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu_File">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="action_Quit"/>
+   </widget>
+   <widget class="QMenu" name="menu_Objects">
+    <property name="title">
+     <string>&amp;Misc objects</string>
+    </property>
+    <addaction name="action_Sphere"/>
+    <addaction name="action_Lot_of_Tetras"/>
+    <addaction name="action_Torus"/>
+    <addaction name="action_Torus2"/>
+    <addaction name="actionTruncated_Icosahedron"/>
+   </widget>
+   <widget class="QMenu" name="menu_Help">
+    <property name="title">
+     <string>&amp;Help</string>
+    </property>
+    <addaction name="action_About"/>
+   </widget>
+   <widget class="QMenu" name="menu_Platonic_solids_2">
+    <property name="title">
+     <string>&amp;Platonic solids</string>
+    </property>
+    <addaction name="action_Tetrahedron"/>
+    <addaction name="action_Cube"/>
+    <addaction name="action_CubeQuad"/>
+    <addaction name="action_Octahedron"/>
+    <addaction name="action_Dodecahedron"/>
+    <addaction name="action_Icosahedron"/>
+   </widget>
+   <widget class="QMenu" name="menu_Geodesic_domes_2">
+    <property name="title">
+     <string>&amp;Geodesic domes</string>
+    </property>
+    <addaction name="actionFrom_Tetrahedron_2"/>
+    <addaction name="actionFrom_Tetrahedron_4"/>
+    <addaction name="actionFrom_Octahedron_2"/>
+    <addaction name="actionFrom_Octahedron_4"/>
+    <addaction name="actionFrom_Icosahedron_2"/>
+    <addaction name="actionFrom_Icosahedron_4"/>
+   </widget>
+   <widget class="QMenu" name="menu_Rendering">
+    <property name="title">
+     <string>&amp;Rendering</string>
+    </property>
+    <addaction name="actionDisplay_edges"/>
+    <addaction name="action_Color_mode"/>
+    <addaction name="actionInteractive"/>
+    <addaction name="separator"/>
+    <addaction name="actionZoom_In"/>
+    <addaction name="actionZoom_Out"/>
+   </widget>
+   <addaction name="menu_File"/>
+   <addaction name="menu_Rendering"/>
+   <addaction name="menu_Platonic_solids_2"/>
+   <addaction name="menu_Geodesic_domes_2"/>
+   <addaction name="menu_Objects"/>
+   <addaction name="menu_Help"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="action_About">
+   <property name="text">
+    <string>&amp;About...</string>
+   </property>
+   <property name="toolTip">
+    <string>Display the application about box</string>
+   </property>
+  </action>
+  <action name="action_Quit">
+   <property name="text">
+    <string>&amp;Quit</string>
+   </property>
+   <property name="toolTip">
+    <string>Quit the application</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionFrom_Icosahedron_2">
+   <property name="text">
+    <string>from &amp;Icosahedron(2)</string>
+   </property>
+   <property name="toolTip">
+    <string>from Icosahedron(2)</string>
+   </property>
+  </action>
+  <action name="action_Icosahedron">
+   <property name="text">
+    <string>&amp;Icosahedron</string>
+   </property>
+  </action>
+  <action name="action_Tetrahedron">
+   <property name="text">
+    <string>&amp;Tetrahedron</string>
+   </property>
+  </action>
+  <action name="action_Cube">
+   <property name="text">
+    <string>&amp;Cube</string>
+   </property>
+  </action>
+  <action name="action_CubeQuad">
+   <property name="text">
+    <string>&amp;CubeQuad</string>
+   </property>
+  </action>
+  <action name="action_Lot_of_Tetras">
+   <property name="text">
+    <string>&amp;Lot of Tetras</string>
+   </property>
+  </action>
+  <action name="action_Torus">
+   <property name="text">
+    <string>&amp;Torus</string>
+   </property>
+  </action>
+  <action name="action_Torus2">
+   <property name="text">
+    <string>&amp;Torus2</string>
+   </property>
+  </action>
+  <action name="action_Dodecahedron">
+   <property name="text">
+    <string>&amp;Dodecahedron</string>
+   </property>
+  </action>
+  <action name="actionFrom_Icosahedron_4">
+   <property name="text">
+    <string>from I&amp;cosahedron(4)</string>
+   </property>
+   <property name="toolTip">
+    <string>from Icosahedron(4)</string>
+   </property>
+  </action>
+  <action name="action_Sphere">
+   <property name="text">
+    <string>&amp;Sphere</string>
+   </property>
+  </action>
+  <action name="actionFrom_Tetrahedron_2">
+   <property name="text">
+    <string>from &amp;Tetrahedron(2)</string>
+   </property>
+  </action>
+  <action name="actionFrom_Tetrahedron_4">
+   <property name="text">
+    <string>from T&amp;etrahedron(4)</string>
+   </property>
+  </action>
+  <action name="action_Octahedron">
+   <property name="text">
+    <string>&amp;Octahedron</string>
+   </property>
+  </action>
+  <action name="actionFrom_Octahedron_2">
+   <property name="text">
+    <string>from &amp;Octahedron(2)</string>
+   </property>
+  </action>
+  <action name="actionFrom_Octahedron_4">
+   <property name="text">
+    <string>from O&amp;ctahedron(4)</string>
+   </property>
+   <property name="toolTip">
+    <string>from Octahedron(4)</string>
+   </property>
+  </action>
+  <action name="actionTruncated_Icosahedron">
+   <property name="text">
+    <string>Truncated Icosahedron (soccer &amp;ball)</string>
+   </property>
+  </action>
+  <action name="actionDisplay_edges">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Display &amp;edges</string>
+   </property>
+   <property name="shortcut">
+    <string>E</string>
+   </property>
+  </action>
+  <action name="action_Color_mode">
+   <property name="text">
+    <string>&amp;Color mode</string>
+   </property>
+   <property name="shortcut">
+    <string>C</string>
+   </property>
+  </action>
+  <action name="actionZoom_In">
+   <property name="text">
+    <string>Zoom &amp;In</string>
+   </property>
+   <property name="shortcut">
+    <string>PgUp</string>
+   </property>
+  </action>
+  <action name="actionZoom_Out">
+   <property name="text">
+    <string>Zoom &amp;Out</string>
+   </property>
+   <property name="shortcut">
+    <string>PgDown</string>
+   </property>
+  </action>
+  <action name="actionInteractive">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Interactive</string>
+   </property>
+   <property name="shortcut">
+    <string>Space</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

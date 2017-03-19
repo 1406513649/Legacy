@@ -1,0 +1,16 @@
+*~
+.#*
+*.pyc
+*.bak
+lib/python/local-packages/odbtools/test
+.DS_Store
+etc/spacemacs/save-place
+**/Trash
+**/tmp/*
+**/tmp
+foo
+Icon*
+.ipynb_checkpoints/
+env/Jupyter/nbsignatures.db
+var/tmp/*
+etc/vim/.netrwhist

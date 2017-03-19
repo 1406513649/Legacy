@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+import os
+import sys
+from subprocess import call
+
+D = os.path.dirname(os.path.realpath(__file__))
+
+def find_app(App):
+    apps = []
+    app = " ".join(App.split()).lower()
+    # Search directories, listed in order of precedence
+    for p in [os.path.expanduser("~/Applications"), "/Applications"]:
+        for ddf in os.walk(p):
+            if not ddf[0].endswith(".app"):
+                continue
+            if App == os.path.splitext(os.path.basename(ddf[0]))[0]:
+                return ddf[0]
+            elif app in ddf[0].lower() and ddf[0].endswith(".app"):
+                apps.append(ddf[0])
+            del ddf[1][:]
+    if not apps:
+        return None
+    # Sort, returning newest
+    return sorted(apps, key=lambda x: os.path.basename(x))[-1]
+
+if "darwin" in sys.platform.lower():
+    paraview = find_app("paraview")
+    if paraview is None:
+        raise SystemExit("paraview application not found")
+    paraview = os.path.join(paraview, "Contents/MacOS/paraview")
+else:
+    for dirpath in os.getenv("PATH").split(os.pathsep):
+        if dirpath == D:
+            continue
+        if "paraview" in os.listdir(dirpath):
+            paraview = os.path.join(dirpath, "paraview")
+            break
+    else:
+        raise SystemExit("paraview not found in path")
+
+f = [x for x in sys.argv[1:] if os.path.isfile(x)]
+cmds = [x for x in sys.argv[1:] if x not in f]
+cmds.append("--data-directory={0}".format(os.getcwd()))
+f = " ".join(f)
+cmds = " ".join('{0}'.format(x) for x in cmds)
+sys.exit(call("{0} {1} {2}".format(paraview, f, cmds), shell=True))

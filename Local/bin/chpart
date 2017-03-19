@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+import os
+import re
+import sys
+import glob
+import shutil
+import argparse
+from os.path import join, basename
+
+try:
+    input = raw_input
+except NameError:
+    pass
+
+description = """chpart: changes all files *pat*.* to *repl*.*"""
+p = argparse.ArgumentParser(description=description)
+p.add_argument("-s", help="File extension filter")
+p.add_argument("--regex", help="Regular expression filter")
+args, opts = p.parse_known_args(sys.argv[1:])
+
+try:
+    pat, repl = opts
+except ValueError:
+    p.print_usage()
+    sys.exit('chpart: error: too few arguments')
+
+d = os.getcwd()
+if args.s:
+    s = args.s.lstrip(".")
+    files = glob.glob(join(d, "*.{0}".format(s)))
+else:
+    files = os.listdir(d)
+files = [basename(f) for f in files]
+
+# filter files
+files = [f for f in files if pat in basename(f)]
+if args.regex:
+    files = [f for f in files if re.search(args.regex, f)]
+if not len(files):
+    sys.exit("no files with {0} in basename".format(pat))
+
+lpstr = 0
+pstr = []
+files_to_change = []
+for f in files:
+    fold, fnew = f, join(d, f.replace(pat, repl))
+    files_to_change.append((fold, fnew))
+    pstr.append("mv/cp {0} -> {1}".format(fold, basename(fnew)))
+    lpstr = max(lpstr, len(pstr[-1]))
+
+sys.stdout.write("{0}\n{1}\n{0}\n".format("-" * lpstr, "\n".join(pstr)))
+
+response = input("Enter m to move, c to copy. Any other response aborts: ")
+try:
+    action = {"m": shutil.move, "c": shutil.copyfile}[response]
+except KeyError:
+    sys.exit("aborted")
+else:
+    for (fold, fnew) in files_to_change:
+        action(fold, fnew)

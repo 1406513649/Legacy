@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+import os
+import datetime
+import sys
+import re
+
+now = datetime.datetime.now()
+dnam = "{0:04d}.{1:02d}.{2:02d}".format(now.year, now.month, now.day)
+newd = os.path.join(os.getcwd(), dnam)
+
+usage = """{1}: make dated directory "{0}" in current directory
+usage: {1}""".format(os.path.split(newd)[1],os.path.basename(__file__))
+if "-h" in sys.argv:
+    sys.exit(usage)
+
+if not os.path.isdir(newd):
+    os.umask(0)
+    os.mkdir(newd,0750)

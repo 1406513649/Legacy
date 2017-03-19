@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+import sys
+import os
+import argparse
+
+X = os.path.basename(__file__)
+description = "converts unix style line end characters to windows style"
+p = argparse.ArgumentParser(description=description)
+p.add_argument("files", nargs="+", help="Source Destination file pair[s]")
+p.add_argument("-d", help=("Destination directory.  If specified, "
+                           "files are all assumed to be sources "
+                           "[default: %(default)s]"))
+p.add_argument("-i", default=False, action="store_true",
+               help="Write new file inplace [default: %(default)s]")
+p.add_argument("-a", default=False, action="store_true",
+               help=("Write new file as filename-DOS.  If specified, files "
+                     "are all assumed to be sources [default: %(default)s]"))
+p.add_argument("--dryrun", default=False, action="store_true")
+args = p.parse_args()
+
+if args.d:
+    if not os.path.isdir(args.d):
+        raise SystemExit("{0}: no such directory".format(args.d))
+    files = [(f, os.path.join(args.d, os.path.basename(f))) for f in args.files]
+elif args.a:
+    files = []
+    for f in args.files:
+        root, ext = os.path.splitext(f)
+        root += "-DOS"
+        files.append((f, root + ext))
+elif args.i:
+    files = [(f, f) for f in args.files]
+else:
+    if len(args.files) % 2 != 0:
+        raise SystemExit("files must be specified as Source Destination pair[s]")
+    files = []
+    for i in range(0, len(args.files), 2):
+        src, dst = args.files[i], args.files[i+1]
+        if os.path.isdir(dst):
+            dst = os.path.join(dst, os.path.basename(src))
+        files.append((src, dst))
+
+for (source, destination) in files:
+    print "Writing {0} to {1}".format(source, destination)
+    if not os.path.isfile(source):
+        raise SystemExit("{0}: no such file".format(source))
+    if args.dryrun:
+        continue
+    lines = "\r\n".join(line.rstrip() for line in open(source,'rU').readlines())
+    with open(destination, "w") as fh:
+        fh.write(lines)
+        continue

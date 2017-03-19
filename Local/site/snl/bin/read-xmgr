@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+
+
+import os,sys
+
+def read_xmgr(argv):
+
+    for arg in argv:
+
+        infile = arg
+        if not os.path.isfile(infile):
+            error("input file {0} not found".format(infile))
+            pass
+
+        xmgr_lines = open(infile,"r").readlines()
+
+        idxs = [ i for i in range(len(xmgr_lines)) if xmgr_lines[i].strip() == "&" ]
+
+        dat0 = []
+        idx0 = 0
+        for idx in idxs:
+            dat0.append([ x.strip() for x in xmgr_lines[idx0:idx] ])
+            idx0 = idx
+            continue
+
+        data = {}
+        for items in dat0:
+            xaxis,yaxis = None,None
+            for item in items:
+                if item[0] == "&": continue
+                if item[0] == "#": continue
+                if item[0] == "@" and "axis label" not in item: continue
+                if "xaxis label" in item:
+                    xaxis = item[item.index('"')+1:-1].replace(" ","_")
+                    continue
+                if "yaxis label" in item:
+                    yaxis = item[item.index('"')+1:-1].replace(" ","_")
+                    continue
+
+
+                if not xaxis: error("no xaxis")
+                if not yaxis: error("no yaxis")
+                datx,daty = zip(*[x.split() for x in items[items.index(item)+1:]])
+                data[xaxis] = datx
+                data[yaxis] = daty
+                break
+
+            continue
+
+        keys = data.keys()
+        with open( os.path.splitext(infile)[0] + ".parsed.out", "w" ) as f:
+            f.write("# " + "\t".join(keys) + "\n")
+            for i in range(len(data[keys[0]])):
+                for key in keys:
+                    f.write("{0:12.5E}\t".format(float(data[key][i])))
+                    continue
+                f.write("\n")
+                continue
+            pass
+
+        continue
+
+
+def error(msg):
+    sys.exit("\nERROR: {0}\n".format(msg))
+
+if __name__ == "__main__":
+
+    argv = sys.argv[1:]
+    if not len(argv): error("No input file given")
+    read_xmgr(argv)

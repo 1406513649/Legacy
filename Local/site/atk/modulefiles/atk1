@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+##
+
+def help():
+    return ('{module_name} - loads the {name} environment\n'
+            '\tThe following env variables are modified:\n'
+            '\t{prefix} to $PATH')
+
+# for Tcl script use only
+name = 'atk'
+prefix = join(HOME, 'Local/site/atk/bin')
+
+if not exists(prefix):
+    msg = '{0} Load Error: {1!r} does not exist'.format(module_name, prefix)
+    raise_error(msg)
+
+if 'darwin' in PLATFORM:
+    scratch_d = '/Volumes/Data/Scratch'
+else:
+    scratch_d = '/panfs/pan1/scratch'
+
+setenv('MYSCRATCH', '{d}/{u}'.format(d=scratch_d, u=USER))
+append_path('PATH', prefix)
+setenv('ATK_LICENSE_PATH', '6200@ut40svaw0049')
+
+set_alias('umount', 'open "cifs://baccifs/home2/e63302"')
+set_alias('smount', 'open "cifs://promcifs/Scratch"')
+set_alias('gmount', 'open "cifs://promcifs/Se"')

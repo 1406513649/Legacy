@@ -1,0 +1,17 @@
+#!/bin/sh -f
+FY=FY16
+D1=/home/e63302
+BU=/Volumes/e63302
+EXC="--exclude-from $HOME/Local/bin/skip.txt"
+O='-rvz'
+if [[ ! -z $1 && $1 == '-d' ]]; then
+    O="$O --delete"
+fi
+X='rsync'
+if [[ -d "$BU" ]]; then
+    $X $O $EXC $HOME/Workspace/$FY/ $BU/$FY/
+    $X $O $EXC $HOME/Workspace/Programs/ $BU/Programs/
+    $X $O $EXC $HOME/Documents/ $BU/Documents/
+    $X $O $EXC $HOME/Local/ $BU/Local/
+    $X $O $EXC -e ssh condor:$D1/Workspace/Programs/ $BU/Programs/
+fi

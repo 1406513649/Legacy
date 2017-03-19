@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+import os
+import sys
+from subprocess import Popen
+if len(sys.argv) != 2:
+    sys.exit('hvtrans1: convert odb to h3d\nusage: hvtrans1 <file>')
+filename = sys.argv[1]
+root, ext = os.path.splitext(filename)
+if not os.path.isfile(root+'.odb'):
+    sys.exit('file not found: {0!r}'.format(root+'.odb'))
+hvtrans = '/apps/altair/hyperworks/13.0.110/altair/scripts/hvtrans'
+command = '{0} -a {1}.odb -o {1}.h3d'.format(hvtrans, root)
+proc = Popen(command.split())
+proc.wait()
+sys.exit(proc.returncode)

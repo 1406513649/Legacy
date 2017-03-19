@@ -1,0 +1,16 @@
+"set guifont=Andale\ Mono:h13.00
+"colorscheme pablo     "elflord
+"set background=dark
+
+
+" set guifont=Courier:h13.00
+" colorscheme elflord
+" set background=light
+
+set guifont=Courier:h13.00
+colorscheme mayansmoke
+let macvim_skip_colorscheme=1
+
+" initial size
+set columns=85
+set lines=65

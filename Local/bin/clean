@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+import os
+import sys
+import glob
+import argparse
+import shutil
+from os.path import isfile, splitext
+
+cwd = os.getcwd()
+
+aba = ['abaqus', 'abq', 'aba']
+tex = ['tex', 'latex']
+py = ['py', 'python']
+backup = ['backup', 'bu']
+fe = ['fe', 'afe']
+dakota = ['dakota', 'dak']
+
+kinds = aba + tex + py + backup + fe + dakota
+
+parser = argparse.ArgumentParser()
+parser.add_argument('kind', choices=kinds)
+parser.add_argument('-w', action='store_true', default=False,
+                    help='REALLY clean [default: %(default)s]')
+parser.add_argument('--basename', default='*',
+                    help='file basename to clean [default: %(default)s]')
+parser.add_argument('--safe', action='store_true', default=False,
+                    help='ask before removing [default: %(default)s]')
+parser.add_argument('-r', dest='recursive', action='store_true', default=False,
+                    help='clean recursive [default: %(default)s]')
+args = parser.parse_args()
+
+cdirs = []
+if args.kind in aba:
+    exts = '.abq .com .mdl .mdl.* .odb_f .pac .prt .res .sel .stt .stt.*'
+    exts += ' .log .par .pes .pmg .sim .pbslog .cid .023 .fil .rpy .rpy.*'
+    exts += ' *.SMAFocus *.SMABulk *.tmp *.msg.* *.msg'
+    if args.w:
+        exts += ' .odb .lck .sta .dat'
+elif args.kind in tex:
+    exts = '.aux .bbl .blg .ilg .lof .log .lot .nlo .nls .toc .synctex.gz .out'
+    cdirs.extend(['_minted-*', 'auto'])
+elif args.kind in py:
+    exts = '.pyc .pyo'
+    if args.w:
+        exts += ' .so'
+elif args.kind in backup:
+    exts = '~'
+elif args.kind in fe:
+    exts = '.log .pyc'
+    if args.w:
+        exts += ' .exo .dbx'
+elif args.kind in dakota:
+    exts = '*S4 *.out'
+    if args.w:
+        exts += ' .rst .txt .dat *.sps *.spk *.dist'
+        cdirs.append('workdir')
+
+toclean = []
+for (dirname, dirs, files) in os.walk(cwd):
+    if args.kind in aba:
+        # [try to] determine if this directory is an abaqus simulation
+        # directory
+        is_aba_dir = '.inp' in [os.path.splitext(f)[1] for f in files]
+        if not is_aba_dir:
+            continue
+    for ext in exts.split():
+        pat = args.basename + ext
+        toclean.extend(glob.glob(os.path.join(dirname, pat)))
+    for d in cdirs:
+        toclean.extend(glob.glob(os.path.join(dirname, d)))
+    if not args.recursive:
+        break
+
+if not toclean:
+    sys.exit('Nothing to clean')
+
+if args.safe:
+    print('Files to clean: ')
+    print(', '.join(os.path.basename(f) for f in toclean))
+    response = input('Continue? (y/n) [n] ').strip()
+    if response.lower() != 'y':
+        sys.exit('stopping')
+
+print('cleaning: {0}'.format(', '.join(f.replace(cwd, '.') for f in toclean)))
+for f in toclean:
+    if os.path.isfile(f):
+        try: os.remove(f)
+        except OSError: pass
+    else:
+        try: shutil.rmtree(f)
+        except OSError: pass

@@ -1,0 +1,5 @@
+name = module_name()
+version = module_version()
+setenv('SALAMI', '/opt/1')
+append_path('SALAMI', '/opt/2')
+prepend_path('SALAMI', '/opt/0')

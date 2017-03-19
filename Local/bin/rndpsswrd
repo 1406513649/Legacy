@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+"""
+Generate random password
+"""
+
+from optparse import OptionParser
+import random
+import sys
+#-----------------------------------------------------------------------------
+
+def gen_pass(pwlen, specialc):
+    """
+    """
+    alpha = 'abcdefghijklmnopqrstuvwxyz'
+    Alpha = alpha.upper()
+    nums = '0123456789'
+    special = "!?$?%^&*()_-+={[}]:;@~#|\<,>.?/"
+
+    chars = alpha + Alpha + nums
+    if specialc: chars += special
+
+    return "".join(random.sample(chars, pwlen))
+
+#-----------------------------------------------------------------------------
+def main(argv):
+    """
+    Provides main flow control.
+    """
+    usage = sys.argv[0] + " [options]"
+    parser = OptionParser(usage=usage)
+    parser.add_option("-l", "--length",
+                      action="store",
+                      dest="pwlen",
+                      default=10,
+                      type=int,
+                      help="The length of each password [default: %default]")
+    parser.add_option("-s", "--specialc",
+                      action="store_true",
+                      dest="specialc",
+                      default=False,
+                      help="Include non alphanumeric characters [default: %default]")
+    parser.add_option("-c", "--count",
+                      action="store",
+                      dest="pwcount",
+                      default=1,
+                      type=int,
+                      help="Number of passwords to generate [default: %default]")
+
+    (opts, args) = parser.parse_args(argv)
+
+    for p in range(0, opts.pwcount):
+        pw = gen_pass(opts.pwlen, opts.specialc)
+        print pw
+        continue
+
+    sys.exit(0)
+#-----------------------------------------------------------------------------
+if __name__ == "__main__":
+    main(sys.argv[1:])

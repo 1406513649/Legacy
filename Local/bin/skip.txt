@@ -1,0 +1,13 @@
+*.odb.*
+*.odb_f
+*.com
+*.par
+*.pbslog
+*.pes
+*.pmg
+*.rpy
+*.prt
+*.bak
+*.lck
+*~
+.DS_Store

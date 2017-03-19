@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+import os
+import subprocess
+import sys
+
+D, X = os.path.split(os.path.realpath(__file__))
+dtfile = os.path.join(D, ".singleapp")
+ON, OFF = ":ON", ":OFF"
+try: state = open(dtfile).readline().strip()
+except IOError: state = None
+
+usage = """\
+{0}: Turn on, off, or toggle Mac OSX single application mode
+usage: {0} [on|off] [-h]
+""".format(X)
+
+def error(message):
+    sys.exit("{0}: error: {1}\n\n{2}".format(X, message, usage))
+
+argv = sys.argv[1:]
+if "-h" in argv: sys.exit(usage)
+
+if not argv:
+    if state is None:
+        error("must specify initial state")
+    # toggle state
+    state = {ON: OFF, OFF: ON}.get(state)
+else:
+    state = {"on": ON, "off": OFF}.get(argv[0].lower())
+    if state is None:
+        error("unrecognized argument: {0}".format(argv[0]))
+
+with open(dtfile, "w") as fobj:
+    fobj.write(state)
+
+cmd = "defaults write com.apple.dock single-app -bool {0}; killall Dock"
+subprocess.call(cmd.format({OFF: "false", ON: "true"}[state]), shell=True)

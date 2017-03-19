@@ -1,0 +1,124 @@
+#!/usr/bin/env python
+import os
+import sys
+import argparse
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+STATUSES = {0: "PASS", 1: "DIFF", 2: "FAIL"}
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("file1")
+    parser.add_argument("file2")
+    parser.add_argument("--rtol", default=1e-05, type=float,
+        help="The relative tolerance [default: %(default)s]")
+    parser.add_argument("--atol", default=1e-08, type=float,
+        help="The absolute tolerance [default: %(default)s]")
+    parser.add_argument("--dtol", default=1e-04, type=float,
+        help="DIFF tolerance [default: %(default)s]")
+    parser.add_argument("--plot", default=False, action="store_true",
+        help="Plot overlays [default: %(default)s]")
+    args = parser.parse_args(argv)
+
+    # Check that files exist
+    assert os.path.isfile(args.file1)
+    assert os.path.isfile(args.file2)
+    f1 = os.path.basename(args.file1)
+    f2 = os.path.basename(args.file2)
+
+    # load header and data
+    head1 = head(args.file1)
+    head2 = head(args.file2)
+    data1 = np.loadtxt(args.file1, skiprows=1)
+    data2 = np.loadtxt(args.file2, skiprows=1)
+
+    # Time must be the same in both files
+    t1 = idx("TIME", head1)
+    if t1 is None: sys.exit("{0}: time not found".format(f1))
+    t2 = idx("TIME", head2)
+    if t2 is None: sys.exit("{0}: time not found".format(f2))
+
+    if data1.shape[0] != data2.shape[0]:
+        sys.exit("{0}/{1}: len(TIME) differs ({2}, {3})".format(
+            f1, f2, data1.shape[0], data2.shape[0]))
+
+    t1, t2 = data1[:, t1], data1[:, t2]
+    if not np.allclose(t1, t2):
+        sys.exit("{0}/{1}: timesteps differ".format(f1, f2))
+
+    common = [x for x in head1 if x in head2]
+    common.remove("TIME")
+    status = {}
+
+    if args.plot:
+        plotd = os.path.basename(os.path.splitext(args.file1)[0]) + ".plots"
+        if not os.path.isdir(plotd):
+            os.makedirs(plotd)
+
+    for item in common:
+        idx1 = idx(item, head1)
+        idx2 = idx(item, head2)
+        if not idx1:
+            print "{0}: not in {1}".format(item, f1)
+            continue
+        if not idx2:
+            print "{0}: not in {1}".format(item, f2)
+            continue
+        d1 = data1[:, idx1]
+        d2 = data2[:, idx2]
+
+        if not np.allclose(d1, d2, rtol=args.rtol, atol=args.atol):
+            err = nrms(d1, d2)
+            if nrms < args.dtol:
+                status[item] = {"stat": 1, "err": err}
+            else:
+                status[item] = {"stat": 2, "err": err}
+        else:
+            status[item] = {"stat": 0, "err": 0.}
+
+        if args.plot:
+            plt.plot(t1, d1, label=f1, lw=3, c="DarkOrange")
+            plt.plot(t2, d2, label=f2, lw=1, c="g")
+            plt.legend(loc="best")
+            plt.savefig(os.path.join(plotd, item + ".pdf"))
+            plt.cla()
+            plt.clf()
+
+    for (key, val) in status.items():
+        print "{0}: {1} ({2:.4f})".format(key, STATUSES[val["stat"]], val["err"])
+
+    stat = max([v["stat"] for (k, v) in status.items()])
+
+    if stat:
+        print "Files are different"
+
+    if stat == 2:
+        print "FAILED"
+
+    return stat
+
+def nrms(a, b=None):
+    if b is None:
+        b = np.zeros(a.shape[0])
+    dnom = max([np.amax(np.abs(a)), np.amax(np.abs(b)), 1.])
+    return np.sqrt(np.mean((a - b) ** 2)) / dnom
+
+
+def head(filepath):
+    return [x.upper() for x in open(filepath).readline().split()]
+
+
+def idx(name, a):
+    try:
+        return a.index(name.upper())
+    except ValueError:
+        return None
+
+
+if __name__ == "__main__":
+    sys.exit(main())

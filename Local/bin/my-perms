@@ -1,0 +1,7 @@
+#!/bin/csh
+
+find ~/ -type d -not -wholename "*.snapshot*" -exec chmod 750 {} \;
+find ~/Public -type d -exec chmod 775 {} \;
+find ~/Public -type f -exec chmod 777 {} \;
+chmod 755 ~/
+chmod 722 ~/Public/Drop\ Box

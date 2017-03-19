@@ -1,0 +1,1 @@
+HAS_CCOMPILER = False

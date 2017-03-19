@@ -1,0 +1,31 @@
+#!/usr/bin/python2.7
+import os
+import sys
+from commands import getstatusoutput
+
+# find the git
+D = os.getcwd()
+for i in range(len(D.split(os.pathsep))):
+    if ".git" in os.listdir(D):
+        break
+    D = os.path.realpath(os.path.join(D, "../"))
+else:
+    sys.exit("fatal: Not a git repository (or any of the parent directories): .git")
+
+WORK_TREE = D
+GIT_DIR = os.path.join(D, ".git")
+GIT = "git --git-dir={0} --work-tree={1}".format(GIT_DIR, WORK_TREE)
+
+def git(cmd):
+    sp = "   "
+    out = getstatusoutput("{0} {1}".format(GIT, cmd))[1]
+    s = ["{0}{1}".format(sp, l.strip()) for l in out.split("\n") if l.split()]
+    return "\n".join(s)
+
+def echo_cmd(message, cmd):
+    print "== {0}:\n{1}".format(message, git(cmd))
+
+echo_cmd("Remote URL", "remote -v")
+echo_cmd("Remote Branches", "branch -r")
+echo_cmd("Local Branches", "branch")
+echo_cmd("Most Recent Commit", "log --max-count=1")

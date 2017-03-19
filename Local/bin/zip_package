@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+import os
+import zipfile
+import argparse
+from os.path import realpath, isdir, basename, dirname, join, abspath, isfile
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument('sources', nargs='+')
+    p.add_argument('-v', help='Version number')
+    p.add_argument('-o', help='Output name')
+    p.add_argument('--pyc', action='store_true', help='Keep .pyc files')
+    args = p.parse_args()
+
+    # Determine archive name
+    if args.o:
+        archive_name = basename(args.o)
+    elif len(args.sources) == 1:
+        archive_name = basename(realpath(args.sources[0]))
+    else:
+        p.error('multiple directories requires -o')
+    if args.v:
+        archive_name += '-v{0}'.format(args.v)
+
+    # Determine source directories
+    if len(args.sources) == 1:
+        sources = collect(args.sources[0], args.pyc)
+    else:
+        sources = [f for d in args.sources for f in collect(d, args.pyc) if f]
+
+    fh = zipfile.ZipFile(archive_name + '.pyz', 'w')
+    for (source, name) in sources:
+        fh.write(source, name)
+    fh.close()
+
+def collect(the_dir, pyc):
+    cwd = os.getcwd()
+    if isfile(the_dir):
+        sources = [(the_dir, basename(the_dir))]
+    else:
+        root_dir = realpath(the_dir)
+        assert isdir(root_dir)
+        repl_d = dirname(root_dir)+os.path.sep
+        os.chdir(root_dir)
+        sources = []
+        for (d, dirs, files) in os.walk('.'):
+            if basename(d) == '__pycache__' and not pyc:
+                del dirs[:]
+                continue
+            elif basename(d) in ('.git', '.svn', '.ipynb_checkpoints'):
+                del dirs[:]
+                continue
+            D = realpath(join(root_dir, d))
+            db = D.replace(repl_d, '')
+            dd = D.replace(root_dir+os.path.sep, '')
+            sources.extend([(join(D, f), join(db, f)) for f in files])
+
+    # Filter pyc
+    def filterit(f):
+        exts = ('.gitignore', '.bak')
+        if not pyc:
+            exts = exts + ('.pyc',)
+        return f.endswith(exts)
+
+    if not pyc:
+        sources = [f for f in sources if not filterit(f[0])]
+
+    os.chdir(cwd)
+
+    return sources
+
+if __name__ == '__main__':
+    main()

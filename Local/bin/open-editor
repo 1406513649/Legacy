@@ -1,0 +1,423 @@
+#!/usr/bin/env python
+"""Script for opening files in editor
+
+Script
+"""
+import os
+import re
+import sys
+import getpass
+import argparse
+from subprocess import Popen, call, check_output, PIPE
+
+D, X = os.path.split(os.path.realpath(__file__))
+ENVIRON = os.getenv('DOT_LOCAL', os.path.expanduser('~/.local.d'))
+BASH = os.path.join(ENVIRON, "bash")
+PYBIN = os.path.join(ENVIRON, "bin")
+DESCRIPTION = """opens [file in] editor"""
+
+# Determine if emacs is running, if it is, launch the emacsclient, otherwise
+# launch emacs
+EMACSAPP = "darwin" in sys.platform.lower()
+
+# Set up the document shortcut file
+HOME = os.path.expanduser("~").replace("/ascldap/users", "/home")
+HENV = r"${HOME}"
+SCR = os.getenv("MYSCRATCH")
+SCRENV = r"${MYSCRATCH}"
+KDSEP = ":"
+DSEP = ";"
+
+DOC_SHORTCUTS = os.path.expanduser('~/.doc-shortcuts')
+if not os.path.isfile(DOC_SHORTCUTS):
+    with open(DOC_SHORTCUTS, "a"):
+        os.utime(DOC_SHORTCUTS, None)
+
+def warn_and_exit(message):
+    sys.exit("open_editor: {0}".format(message))
+
+def main(argv):
+    parser = argparse.ArgumentParser(description=DESCRIPTION)
+    parser.add_argument("-g", action="store", nargs="*", default=None,
+        help="grep and open files with match [default: %(default)s]")
+    parser.add_argument("-e", action="store", default=r"*",
+        help="grep file extension [default: %(default)s]")
+    parser.add_argument("-o", default=[], action="append",
+        help="Open document from doc-shortcuts [default: %(default)s]")
+    parser.add_argument("-s", default=None, nargs=2,
+        help="Save document to doc-shortcuts (-s key path) [default: %(default)s]")
+    parser.add_argument("-S", default=None,
+        help="Remove document to doc-shortcuts [default: %(default)s]")
+    parser.add_argument("-M", default=None,
+        help="Startup mode [default: %(default)s]")
+    parser.add_argument("-u", default=None, action="append",
+        help="Open file from {0} [default: %(default)s]".format(PYBIN))
+    parser.add_argument("-E", default=None, action="append",
+        help="Open file from {0} [default: %(default)s]".format(BASH))
+    parser.add_argument("--no-client", default=False, action="store_true",
+        help="Use emacs, not emacsclient [%(default)s]")
+    parser.add_argument("-w", action="append",
+        help="Open file returned from which [%(default)s]")
+    parser.add_argument("-m", action="append",
+        help="Open module file [%(default)s]")
+    parser.add_argument("-p", action="append",
+        help="Open Port file [%(default)s]")
+    parser.add_argument("-x", action="store_true", default=False,
+        help="Open files with XCode [%(default)s]")
+    parser.add_argument("--self", default=False, action='store_true',
+        help="Open this file [default: %(default)s]")
+    parser.add_argument("--editor", choices=("emacs", "vim"), default="emacs")
+    parser.add_argument("--diff", action='store_true', default=False)
+    args, remainder = parser.parse_known_args(argv)
+
+    errors = 0
+
+    if args.self:
+        remainder = [os.path.join(D, X)]
+
+    if os.path.isfile(' '.join(remainder)):
+        # spaces!
+        remainder = [' '.join(remainder)]
+
+    # look for files in this directory
+    if args.u:
+        for u in args.u:
+            for d in (PYBIN, os.path.join(PYBIN, "private")):
+                f = os.path.join(d, u)
+                if os.path.isfile(f):
+                    remainder.append(f)
+                    break
+            else:
+                errors += 1
+                print("{0}: no such file".format(u))
+
+    # look for files in my environment directory
+    if args.E:
+        for e in args.E:
+            f = os.path.join(BASH, e)
+            if not os.path.isfile(f):
+                f += ".sh"
+            if not os.path.isfile(f):
+                warn_and_exit("{0}: not in {1}".format(e, BASH))
+            remainder.append(f)
+
+    # look for shortcuts
+    if args.s:
+        key, path = args.s
+        save_doc_shortcuts(key, path)
+        remainder.append(path)
+
+    if args.S:
+        clean_doc_shortcuts(args.S)
+        return
+
+    # look for files from which
+    if args.w:
+        for f in args.w:
+            tmp = which(f)
+            if tmp is None:
+                warn_and_exit("{0}: executable not found".format(f))
+            remainder.append(tmp)
+
+    if args.m:
+        for f in args.m:
+            tmp = which_module(f)
+            if tmp is None:
+                warn_and_exit("{0}: module not found".format(f))
+            remainder.append(tmp)
+
+    if args.p:
+        for f in args.p:
+            tmp = which_port_file(f)
+            if tmp is None:
+                warn_and_exit("{0}: Port not found".format(f))
+            remainder.append(tmp)
+
+    if args.o:
+        keys = [x.lower().strip() for x in args.o]
+        if "list" in keys:
+            print_docs()
+            return
+        if "self" in keys:
+            keys.remove("self")
+            remainder.append(os.path.realpath(__file__))
+        unused = []
+        for key in keys:
+            doc_shortcut = get_doc_shortcuts(key, expand=True)
+            if doc_shortcut is None:
+                unused.append(key)
+            else:
+                remainder.append(doc_shortcut)
+        if unused:
+            possible = possible_keys(unused)
+            warning = "{0} not in {1}".format(", ".join(unused), DOC_SHORTCUTS)
+            if possible:
+                warning += "\n\nDid you mean?\n  {0}".format("\n  ".join(possible))
+            warn_and_exit(warning)
+
+    if args.g is not None:
+        pat = r"grep -il '{0}' *.{1}".format(" ".join(args.g), args.e)
+        files = check_output(pat, shell=True)
+        files = [x for x in files.split("\n") if x.strip()]
+        if not files:
+            sys.exit(""""{0}" returned no matches""".format(pat))
+        remainder.extend(files)
+
+    # look for files
+    files = []
+    opts = []
+    for f in remainder:
+        if f.startswith("-"):
+            # must be an argument to pass to editor
+            opts.append(f)
+            continue
+
+        try:
+            f, n = f.split(":")
+        except ValueError:
+            n = None
+        f = os.path.realpath(f)
+        fdir, fnam = os.path.split(f)
+        if not os.path.isfile(f):
+            if not os.path.isdir(fdir):
+                errors += 1
+                print("{0}: no such directory".format(fdir))
+                continue
+        f = "'{0}'".format(f)
+        if n is not None:
+            f = "+{0} {1}".format(n, f)
+        files.append(f)
+        continue
+    if errors:
+        warn_and_exit("stopping due to previous errors")
+
+    # open files
+    files = " ".join(files)
+    if args.x:
+        cmd = 'open -a /Applications/XCode.app {0}'.format(files)
+    else:
+        # get the editor executable path and options
+        if args.editor == "emacs":
+            emacs, emacsopts = find_emacs()
+            emacsopts = "{0} {1} < /dev/tty".format(emacsopts, " ".join(opts))
+
+            if find_process_id("emacs") and not files:
+                sys.exit("emacs already running, no new files to open")
+
+            if args.M:
+                emacsopts = "{0} --funcall={1}-mode".format(emacsopts, args.M)
+            # don't want to see warnings when emacs first starts up
+            suppress = "&> /dev/null" if "emacsclient" not in emacs else ""
+            cmd = "{0} {1} {2} {3} &".format(emacs, emacsopts, files, suppress)
+
+        elif args.editor == "vim":
+            vim, vimopts = find_vim()
+            if find_process_id("vim") or files:
+                vimopts += " -p"
+            suppress = "&> /dev/null"
+            if args.diff:
+                vimopts.replace('-p', '-d')
+            vimopts = '{0} {1}'.format(vimopts, ' '.join(opts))
+            cmd = "{0} {1} {2} {3} &".format(vim, vimopts, files, suppress)
+
+    call(cmd, shell=True)
+    return
+
+
+def print_docs():
+    doc_shortcuts = get_doc_shortcuts()
+    print("Document shortcuts:\n" + "\n".join("  {0}: {1}".format(k, p))
+                                              for k, p in doc_shortcuts.items())
+    return
+
+
+def get_doc_shortcuts(*args, **kwargs):
+    doc_shortcuts = {}
+    for line in open(DOC_SHORTCUTS).readline().split(DSEP):
+        if not line.split(): continue
+        try:
+            key, path = line.strip().split(KDSEP)
+        except ValueError:
+            raise SystemExit("Error loading {0}".format(DOC_SHORTCUTS))
+        if kwargs.get("expand"):
+            path = expand_envar(path)
+        if key in args:
+            return path
+        doc_shortcuts[key] = path
+    if args:
+        return None
+    return doc_shortcuts
+
+
+def possible_keys(keys):
+    if not isinstance(keys, (list, tuple)):
+        keys = [keys]
+    doc_shortcuts = get_doc_shortcuts()
+    return [d for d in doc_shortcuts for k in keys if k in d]
+
+
+def clean_doc_shortcuts(key=None):
+    doc_shortcuts = {}
+    for k, path in get_doc_shortcuts(expand=True).items():
+        if not os.path.isfile(path):
+            # skip nonexistent files
+            continue
+        if k == key:
+            # skip requested
+            continue
+        if path in doc_shortcuts.values():
+            # skip existing
+            continue
+        doc_shortcuts[k] = path
+        continue
+    write_doc_shortcuts(doc_shortcuts)
+    return
+
+
+def write_doc_shortcuts(doc_shortcuts):
+    with open(DOC_SHORTCUTS, "w") as fobj:
+        fobj.write(DSEP.join("{0}{2}{1}".format(k, replace_known_envars(d), KDSEP)
+                             for k, d in doc_shortcuts.items()))
+    return
+
+
+def read_doc_shortcuts():
+    return open(DOC_SHORTCUTS).readline().split(DSEP)
+
+
+def save_doc_shortcuts(key, path):
+    doc_shortcuts = get_doc_shortcuts(expand=False)
+    rpath = os.path.realpath(path)
+    if not os.path.isfile(rpath):
+        warn_and_exit("{0}: no such file".format(path))
+    if key == "list":
+        warn_and_exit("'list' keyword reserved")
+    elif key == "self":
+        warn_and_exit("'self' keyword reserved")
+    print("Saving '{0}' to '{1}'".format(key, DOC_SHORTCUTS))
+    doc_shortcuts[key] = rpath
+    write_doc_shortcuts(doc_shortcuts)
+    return
+
+
+def expand_envar(path):
+    e = re.search(r"\$\{(?P<e>.*)\}", path)
+    if e:
+        e = e.group("e")
+        path = re.sub(r"\$\{{{0}\}}".format(e), os.getenv(e), path)
+    return path
+
+
+def which(exe):
+    for d in os.getenv("PATH").split(os.pathsep):
+        if os.path.isfile(os.path.join(d, exe)):
+            return os.path.join(d, exe)
+    return None
+
+
+def which_module(modulename):
+    for d in os.getenv('MODULEPATH', '').split(os.pathsep):
+        filename = os.path.join(d, modulename)
+        if os.path.isfile(filename):
+            return filename
+        elif os.path.isfile(filename + '.lua'):
+            return filename + '.lua'
+        elif os.path.isdir(filename):
+            modules = os.listdir(filename)
+            if 'default' in modules:
+                return os.path.join(filename, 'default')
+            return os.path.join(filename, modules[-1])
+    return None
+
+
+def which_port_file(port):
+    command = '/opt/macports/bin/port file {0}'.format(port)
+    output = check_output(command, shell=True)
+    port_file = output.decode('ascii', 'ignore').strip()
+    if not os.path.isfile(port_file):
+        return None
+    return port_file
+
+
+def replace_known_envars(path):
+    path = path.replace(HOME, HENV)
+    path = path.replace(SCR, SCRENV)
+    return path
+
+
+def find_process_id(process):
+    u = getpass.getuser()
+    data = check_output("ps -U{0}".format(u), shell=True, env={"PATH": "/bin"})
+    data = data.decode('ascii', 'ignore')
+    for p in data.split("\n"):
+        p = p.split()
+        if not p:
+            continue
+        pid, tty, time = p[:3]
+        cmd = p[3]
+        args = p[4:]
+        if re.search(r"(?i)\b{0}\b".format(process), cmd):
+            return int(pid)
+    return
+
+
+def find_emacs():
+    """Find the emacs executable
+
+    """
+    exedir = None
+    if EMACSAPP:
+        # Look for Emacs.app, giving preference to MacPorts
+        mp = os.getenv("ARCHAPPS", "/Applications/MacPorts")
+        for d in (mp, "~/Applications", "/Applications"):
+            app = os.path.join(d, "Emacs.app")
+            if os.path.isdir(app):
+                exedir = os.path.join(app, "Contents/MacOS")
+                break
+        else:
+            warn_and_exit("Emacs.app: not found")
+
+    else:
+        tmp = which("emacs")
+        if tmp is None:
+            warn_and_exit("emacs not found on PATH")
+        exedir = os.path.dirname(tmp)
+
+    if find_process_id("emacs"):
+        # Emacs is already running, find emacsclient
+        exenam = "emacsclient"
+        exeopts = "-nw --no-wait -c"
+
+    else:
+        # Emacs not running, find emacs
+        exenam = "emacs" if not EMACSAPP else "Emacs"
+        exeopts = ""
+
+    if exedir is None:
+        warn_and_exit("emacs not found")
+
+    exepath = os.path.join(exedir, exenam)
+    if not os.path.isfile(exepath):
+        warn_and_exit("{0}: no such file".format(exepath))
+
+    return exepath, exeopts
+
+def find_vim():
+    opts = ""
+    if "darwin" in sys.platform:
+        exe = which("mvim")
+    else:
+        for exe in ("gvim", "vim"):
+            exe = which(exe)
+            if exe is not None:
+                break
+
+    if exe is None:
+        warn_and_exit("vim not found")
+
+    return exe, opts
+
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

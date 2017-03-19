@@ -1,0 +1,43 @@
+#!/bin/sh
+
+OPTIND=1
+YES="1"
+NO="0"
+nummakejobs=$NO
+tostdout=$NO
+forcemake=$NO
+while getopts ":oj:k" opt;
+do
+    case "$opt" in
+        j) nummakejobs=$OPTARG
+           ;;
+        o) tostdout=$YES
+           ;;
+        k) forcemake=$YES
+           ;;
+    esac
+done
+
+shift $((OPTIND-1))
+[ "$1" = "--" ] && shift
+makeopts="$@"
+
+if [[ "$nummakejobs" == "$NO" ]];
+then
+    nummakejobs=`sysctl -n hw.ncpu`
+fi
+makeopts="-j$nummakejobs $makeopts"
+
+if [[ "$forcemake" == "$YES" ]];
+then
+    makeopts="-k $makeopts"
+fi
+
+if [[ "$tostdout" == "$YES" ]];
+then
+    set -x
+    make $makeopts > xmake.stdout 2> xmake.stderr
+else
+    set -x
+    make $makeopts 2> xmake.stderr
+fi

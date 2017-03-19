@@ -1,0 +1,18 @@
+\ProvidesPackage{homework}[2015/01/28 v1.0]
+
+\usepackage{url}
+\usepackage[letterpaper, portrait, margin=1.5in]{geometry}
+\newcounter{exercise}
+\newenvironment{exercise}{%
+  \newpage
+  \stepcounter{exercise}
+  \noindent\rule{\linewidth}{.4pt}\\[8pt] %
+  \centerline{\Large\bfseries Exercise \theexercise}\\ %
+  \noindent\rule{\linewidth}{.4pt}%
+  \vspace{10pt} %
+  }{}
+\newcommand{\solution}{\vspace{12pt}\noindent{\large\bfseries Solution}\\[8pt]}{}
+
+\endinput
+%%
+%% End of file `homework.sty`

@@ -1,0 +1,126 @@
+#!/usr/bin/env python
+import re
+import os
+import sys
+
+D, F = os.path.split(os.path.realpath(__fil__))
+lines = []
+addrwrap = os.path.join(D, "../tpl/exodusii/forbind/src/addrwrap.F")
+flines = open(addrwrap).readlines()
+
+for line in flines:
+    if not line.split():
+        continue
+    if line[0].lower() == "c":
+        continue
+    if line[5].strip():
+        line = line.split(line[5], 1)[1].strip()
+        lines[-1] = lines[-1] + " " + line
+        continue
+    lines.append(line.rstrip())
+
+# gather subroutines
+subroutines = re.findall(r"(?ms)SUBROUTINE\s*EX.*?END\W", "\n".join(lines), re.M)
+
+f90subs = []
+for i, subroutine in enumerate(subroutines):
+    f90sub = []
+    subroutine = subroutine.split("\n")
+    DEFN = subroutine[0]
+    defn = DEFN.lower()
+    subname = defn.split()[1].lower()
+    pyname = "py_{0}".format(subname)
+    call = defn.replace("subroutine", "call")
+    last = defn.split()[-1].rstrip(")")
+    f90sub.append(defn.replace(subname, pyname))
+
+    refs = [x.strip() for x in
+            re.search(r"\((?P<refs>.*)\)", defn).group("refs").split(",")]
+
+    got = []
+    for line in subroutine[1:]:
+        line = line.lower()
+        if 'include' in line:
+            continue
+        if 'implicit none' in line:
+            f90sub.append("  " + line.strip().lower())
+            continue
+
+        key = " ".join(line.split("!")).split()[-1]
+        intent = {"(r)": "in", "(w)": "out", "(rw)": "inout"}[key]
+
+        dtype = re.search(r"(?i)(integer|real|character).*?[a-z]",
+                          line).group()[:-1].strip()
+        decl = line.replace(dtype, "").split("!")[0].strip()
+
+        name = re.search(r"\w*\W", line.replace(dtype, "").strip()).group()
+        name = name.strip().lower().rstrip("(")
+        if name not in defn:
+            continue
+
+        got.append(name)
+
+        f90sub.append("  {0}, intent({1}) :: {2}".format(dtype, intent, decl))
+
+        if len(got) == len(refs):
+            f90sub.append("  call {0}".format(" ".join(defn.split()[1:])))
+            f90sub.append("end subroutine {0}".format(pyname))
+            break
+
+    f90subs.append(f90sub)
+
+functions = re.findall(r"(?ms)INTEGER FUNCTION\s*EX.*?END\W",
+                       "\n".join(lines), re.M)
+f90fcns = []
+for i, function in enumerate(functions):
+    f90fcn = []
+    function = function.split("\n")
+    DEFN = function[0]
+    defn = DEFN.lower()
+    fcnname = defn.split()[2].lower()
+    pyname = "py_{0}".format(fcnname)
+    call = "{0} = {1}".format(pyname, " ".join(defn.split()[2:]))
+    last = defn.split()[-1].rstrip(")")
+    f90fcn.append(defn.replace(fcnname, pyname))
+
+    refs = [x.strip() for x in
+            re.search(r"\((?P<refs>.*)\)", defn).group("refs").split(",")]
+
+    got = []
+    for line in function[1:]:
+        line = line.lower()
+        if 'include' in line:
+            continue
+        if 'implicit none' in line:
+            f90fcn.append("  " + line.strip().lower())
+            continue
+
+        key = " ".join(line.split("!")).split()[-1]
+        intent = {"(r)": "in", "(w)": "out", "(rw)": "inout"}[key]
+
+        dtype = re.search(r"(?i)(integer|real|character).*?[a-z]",
+                          line).group()[:-1].strip()
+        decl = line.replace(dtype, "").split("!")[0].strip()
+
+        name = re.search(r"\w*\W", line.replace(dtype, "").strip()).group()
+        name = name.strip().lower().rstrip("(")
+        if name not in defn:
+            continue
+
+        got.append(name)
+        f90fcn.append("  {0}, intent({1}) :: {2}".format(dtype, intent, decl))
+        if len(got) == len(refs):
+            f90fcn.append("  integer :: {0}".format(fcnname))
+            f90fcn.append("  {0}".format(call))
+            f90fcn.append("end function {0}".format(pyname))
+            break
+
+    f90fcns.append(f90fcn)
+
+with open("exowrap_unmodified.f90", "w") as fobj:
+    for f90sub in f90subs:
+        fobj.write("\n".join(f90sub))
+        fobj.write("\n\n")
+    for fcn in f90fcns:
+        fobj.write("\n".join(fcn))
+        fobj.write("\n\n")

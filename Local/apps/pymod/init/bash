@@ -1,0 +1,25 @@
+#!/bin/bash
+
+
+if [ -n "$(declare -f module)" ]; then
+  # Modules installed, unset the module command to use my own
+  unset -f module
+fi
+
+PY_MODULESHOME=${HOME}/Local/etc/Modules
+export PY_MODULESHOME
+
+if [ "${PY_LOADEDMODULES:-}" = "" ]; then
+  PY_LOADEDMODULES=
+  export PY_LOADEDMODULES
+fi
+
+if [ ${BASH_VERSINFO:-0} -ge 3 ] && [ -r ${PY_MODULESHOME}/init/bash_completion ]; then
+ . ${PY_MODULESHOME}/init/bash_completion
+fi
+module() { eval `/usr/bin/python ${PY_MODULESHOME}/bin/modulecmd.py $*`; }
+export -f module
+
+export PY_MODULEPATH=${PY_MODULESHOME}/modulefiles
+
+module -v0 load .init

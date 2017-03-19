@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+
+import os,sys,shutil
+
+usage = """{0}: changes all files *.ext1 to *.ext2
+usage: {0} ext1 ext2""".format(os.path.basename(__file__))
+
+if len(sys.argv[1:]) != 2 or "-h" in sys.argv: sys.exit(usage)
+
+ext1 = sys.argv[1]
+ext2 = sys.argv[2]
+
+fs = [x for x in os.listdir(os.getcwd()) if os.path.splitext(x)[1] == "." + ext1]
+if len(fs) == 0: sys.exit("no files with basename %s"%pold)
+
+lpstr = 0
+for f in fs:
+    fbase,fext = os.path.splitext(f)
+    pstr = "mv/cp %s %s"%(f,fbase + "." + ext2)
+    if len(pstr) > lpstr: lpstr = int(len(pstr))
+    print(pstr)
+    continue
+print("-"*lpstr)
+response = input("Enter m to move. Enter c to copy. Any other response aborts ")
+if response != "m" and response != "c": sys.exit()
+
+for f in fs:
+    fbase,fext = os.path.splitext(f)
+    fnew = fbase + "." + ext2
+    if response == "m": shutil.move(f,fnew)
+    elif response == "c": shutil.copyfile(f,fnew)
+    else: sys.exit()
+    continue

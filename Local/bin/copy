@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+
+import os
+import os.path as op
+import sys
+import shutil
+import datetime
+import argparse
+
+X = op.basename(__file__)
+desc = """\
+NAME
+     {0} -- create a copy of files
+
+DESCRIPTION
+      For each file, {0} creates a copy of the form file.MARKER.ext
+
+      The value of 'MARKER' is dependent on the options sent to {0}, defaulting
+      to 'copy' if no options are given.
+""".format(X)
+
+def main(argv):
+    parser= argparse.ArgumentParser(description=desc,
+                                    formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("-d", action="store_true", default=False,
+                        help="MARKER=YYYY.MM.DD [default: %(default)s]")
+    parser.add_argument("-t", action="store_true", default=False,
+                        help=("Add HH.MM.SS to MARKER (-d implied) "
+                              "[default: %(default)s]"))
+    parser.add_argument("-g", action="store_true", default=False,
+                        help="Add '_GOOD' to MARKER [default: %(default)s]")
+    parser.add_argument("files", nargs="+")
+    args = parser.parse_args()
+
+    marker = ".copy"
+    if args.t:
+        args.d = True
+
+    if args.d:
+        now = datetime.datetime.now()
+        marker = ".{0:04d}.{1:02d}.{2:02d}".format(now.year, now.month, now.day)
+
+    if args.t:
+        marker += "_{0:02d}:{1:02d}:{2:02d}".format(
+            now.hour, now.minute, now.second)
+
+    if args.g:
+        marker += "_GOOD"
+
+    files = []
+    for f in args.files:
+        if os.path.isfile(os.path.realpath(f)):
+            files.append(os.path.realpath(f))
+            continue
+        sys.exit("{0}: no such file".format(f))
+
+    if not files:
+        parser.error("No files found to copy")
+
+    for fold in files:
+        fnam, fext = os.path.splitext(fold)
+        fnew = fnam + marker + fext
+        shutil.copyfile(fold, fnew)
+        continue
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

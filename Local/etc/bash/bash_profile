@@ -1,0 +1,7 @@
+# This script is invoked with each login
+PLATFORM=`uname -s | tr '[A-Z]' '[a-z]' | sed 's:[\.0-9]*::g'`
+if [ -r ${HOME}/.bashrc ]; then
+     source ${HOME}/.bashrc
+fi
+export ITERM_SHELL_INTEGRATION_INSTALLED=""
+test -e "${HOME}/.iterm2_shell_integration.bash" && source "${HOME}/.iterm2_shell_integration.bash"

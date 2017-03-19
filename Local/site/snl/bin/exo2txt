@@ -1,0 +1,292 @@
+#!/usr/bin/env python
+"""
+Specialized exodusII reader that parsing an exodus file for element variables
+and creates time history plots of those variables.
+
+AUTHOR
+------
+Tim Fuller, tjfulle@sandia.gov
+
+"""
+import os
+import sys
+import argparse
+import subprocess
+import re
+try:
+    import numpy as np
+    import matplotlib
+    import matplotlib.pyplot as plot
+    PLOT = True
+except ImportError:
+    PLOT = False
+
+
+# Modify path to be able to load exodus.py
+if "darwin" in sys.platform.lower():
+    exopy = os.path.join(os.getenv("HOME"), "Local/darwin/exopy")
+else:
+    # if not on darwin, assume we are on a blade
+    exopy = "/projects/alegra/bin/Linux"
+assert os.path.isdir(exopy), "{0}: no such directory".format(exopy)
+sys.path.append(exopy)
+try:
+    import exodus
+except ImportError:
+    sys.exit("exodus.py not importable")
+
+
+ERRORS = 0
+VARTYPE_MAP = {"g": exodus.EX_GLOBAL, "e": exodus.EX_ELEM_BLOCK,
+               "f": exodus.EX_FACE_BLOCK, "d": exodus.EX_EDGE_BLOCK,
+               "n": exodus.EX_NODE}
+
+
+def main(argv):
+    # ---------------------------------------------- parse input arguments ---#
+    # For now, input arguments are a subset of the exoread.py input arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("files", nargs="+",
+                        help="Exodus files to parse [default: %(default)s]")
+    parser.add_argument("-P", action="store_true", default=False,
+                        help=("Create time history plots of extracted data "
+                              "[default: %(default)s]"))
+    parser.add_argument("-W", action="store_true", default=False,
+                        help=("Do NOT write the time history to file "
+                              "[default: %(default)s]"))
+    parser.add_argument("--id", default=None, action="store", type=int,
+                        help="Element ID [default: %(default)s]")
+    parser.add_argument("-C", default=False, action="store_true",
+                        help="Create overlay plots [default: %(default)s]")
+    parser.add_argument("-e", default=[], action="append",
+                        help=("Element variable to extract (accumulated). "
+                              "The special keyword 'all' will extract all "
+                              "element variables [default: None]"))
+    parser.add_argument("-i", default=None, action="store",
+                        choices=VARTYPE_MAP.keys(),
+                        help="List element data and exit [default: %(default)s]")
+    args = parser.parse_args(argv)
+    # ------------------------------------------------------------------------#
+
+    if args.i is not None:
+        sys.exit(list_data(args.files, VARTYPE_MAP.get(args.i)))
+
+    if args.e:
+        names = mod_names(args.e)
+        vartype = "e"
+    else:
+        parser.error("Nothing to do")
+
+    exotype = VARTYPE_MAP.get(vartype)
+    if exotype is None:
+        parser.error("Unrecognized vartype {0}".format(vartype))
+
+    # loop over files and extract the requested information
+    all_data = []
+    for f in args.files:
+        fpath = os.path.realpath(f)
+        if not os.path.isfile(fpath):
+            warn("{0} not found".format(fpath))
+            continue
+        fdir, fname = os.path.split(fpath)
+
+        # instantiate the ExodusFile object
+        exof = exodus.ExodusFile(fpath)
+        print exof.getIds(exodus.EX_NODE_SET)
+        print exof.getId(exodus.EX_NODE_SET, 4)
+        print help(exof.readVar)
+        print exof.readVar(1, exodus.EX_NODE, 4, 1)
+        sys.exit()
+
+        # for each name requested by the user to extract, find the variable
+        # index from the exodus file
+        header, indices = ["TIME"], []
+        exonames = mod_names(exof.varNames(exotype))
+        if "ALL" in names:
+            names = [x for x in exonames]
+
+        for iname, name in enumerate(names):
+            try:
+                i = exonames.index(name)
+            except ValueError:
+                error("'{0}' not found in {1}, choose from: {2}"
+                      .format(args.e[iname], fname, ", ".join(exonames)))
+                continue
+            indices.append(i)
+            header.append(exonames[i])
+            continue
+
+        # check that the element ID is valid
+        exo_ids = exof.getIds(exotype)
+        if args.id is not None and args.id not in exo_ids:
+            error("Invalid ID '{0}', valid IDs are '{1}'".format(
+                    args.id, ", ".join("{0}".format(x) for x in exo_ids)))
+
+        if error():
+            sys.exit("Stopping due to previous errors")
+
+        # get time information
+        times = exof.getTimes()
+        if not times:
+            error("No timesteps found in {0}".format(fnam), 1)
+
+        # extract requested information from the exodus file
+        data = []
+        for i, time in enumerate(times):
+            row = [time]
+            for idx in indices:
+                row.extend(list(exof.readVar(i+1, exotype, args.id, idx)))
+                continue
+            data.append(row)
+            continue
+
+        # close the exodus file
+        exof.closefile()
+
+        # write out requested information and make plots
+        if not args.W:
+            writef(fpath, header, data)
+
+        if args.P:
+            if PLOT:
+                plot_data(fpath, header, data)
+            else:
+                warn("matplotlib not importable, no plots created")
+
+        all_data.append(data)
+
+        continue
+
+    # make overlay plots of all of the data
+    if args.C and len(args.files) > 1:
+        if PLOT:
+            plot_data_overlay(fdir, args.files, header, all_data)
+        else:
+            warn("matplotlib not importable, no plots created")
+
+    return
+
+
+def plot_data_overlay(fdir, files, header, all_data):
+    """Make time history overlay plots of data
+
+    Parameters
+    ----------
+    header : list
+        List of column names
+    data : list
+        List of all data
+
+    """
+    for i, label in enumerate(header[1:]):
+        plot.figure(i)
+        plot.title("{0} vs TIME".format(label))
+        plot.xlabel("TIME (s)")
+        plot.ylabel(label)
+        for j, data in enumerate(all_data):
+            time = np.array(data)[:, 0]
+            data = np.array(data)[:, 1:]
+            ydata = data[:, i]
+            plot.plot(time, ydata,
+                      label=os.path.splitext(os.path.basename(files[j]))[0])
+        plot.legend(loc=2)
+        plot.savefig(os.path.join(fdir, label + "_COMPARISON.pdf"))
+        plot.close()
+        continue
+
+    return
+
+
+def plot_data(f, header, data):
+    """Make time history plots of data
+
+    Parameters
+    ----------
+    header : list
+        List of column names
+    data : list
+        Columnar data.  TIME is the first column
+
+    """
+    time = np.array(data)[:, 0]
+    data = np.array(data)[:, 1:]
+    for i, label in enumerate(header[1:]):
+        plot.figure(i)
+        plot.title("{0} vs TIME".format(label))
+        plot.xlabel("TIME (s)")
+        plot.ylabel(label)
+        ydata = data[:, i]
+        plot.plot(time, ydata)
+        plot.savefig(os.path.splitext(f)[0] + "_" + label + ".pdf")
+        plot.close()
+        continue
+
+    return
+
+
+def writef(f, header, data):
+    """Write the output file
+
+    """
+    with open(os.path.splitext(f)[0] + ".outxt", "w") as fobj:
+        fobj.write(" ".join("{0:<30s}".format(x) for x in header) + "\n")
+        for row in data:
+            fobj.write(" ".join("{0:<30.16E}".format(x) for x in row) + "\n")
+    return
+
+
+def mod_names(names):
+    """Modify names by upcasing and replacing all spaces and - with _
+
+    Parameters
+    ----------
+    names : list
+        List of names
+
+    Returns
+    -------
+    mod_names : list
+        Modified list of names
+
+    Examples
+    --------
+    >>> mod_names(["a  long  -name", "short"])
+    ["A_LONG_NAME", "SHORT"]
+
+    """
+    return ["_".join(x.replace("-", " ").split()).upper() for x in names]
+
+
+def error(message=None, stop=0, errors=[0]):
+    """Print error message and [optionally] stop"""
+    if message is None:
+        return errors[0]
+    errors[0] += 1
+    message = "ERROR: {0}".format(message)
+    if stop:
+        sys.exit(message)
+    print message
+    return
+
+
+def warn(message):
+    """Print warning"""
+    message = "WARNING: {0}".format(message)
+    print message
+    return
+
+
+def list_data(files, exotype):
+    """List all data available"""
+    for f in files:
+        if not os.path.isfile(f):
+            error("{0} not found".format(f))
+            continue
+        print "Data available for {0}:".format(os.path.basename(f))
+        print ", ".join(mod_names(exodus.ExodusFile(f).varNames(exotype)))
+        continue
+    return
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

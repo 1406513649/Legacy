@@ -1,0 +1,6 @@
+HOME = getenv('HOME')
+DOT_LOCAL = getenv('DOT_LOCAL', os.path.join(HOME, '.local.d'))
+setenv('TRILINOS_ROOT', os.path.join(HOME, 'Development/Trilinos'))
+prepend_path('PATH', os.path.join(DOT_LOCAL, 'sw/trilinos/bin'))
+unload('anaconda/3.5')
+load('anaconda/2.7')

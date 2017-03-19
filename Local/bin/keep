@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+import os
+import sys
+import argparse
+import shutil
+from os.path import isfile, splitext, exists, isdir, join, islink
+
+cwd = os.getcwd()
+
+def remove(item, dryrun):
+    if not exists(item):
+        return
+    if isfile(item) or islink(item):
+        if dryrun:
+            print('rm  -f ' + item)
+            return
+        os.remove(item)
+    elif isdir(item):
+        if dryrun:
+            print('rm -rf ' + item)
+            return
+        shutil.rmtree(item)
+
+def keep_file(filename, keep_files, keep_links):
+    if filename in keep_files:
+        return True
+    if os.path.islink(filename):
+        return keep_links
+    return False
+
+parser = argparse.ArgumentParser()
+parser.add_argument('keep_files', nargs='+')
+parser.add_argument('--safe', action='store_true', default=False,
+                    help='ask before removing [default: %(default)s]')
+parser.add_argument('--remove-links', action='store_true', default=False)
+parser.add_argument('--dryrun', action='store_true', default=False)
+args = parser.parse_args()
+
+to_remove = [join(cwd, f) for f in os.listdir(cwd)
+             if not keep_file(f, args.keep_files, not args.remove_links)]
+
+for item in to_remove:
+    if args.safe:
+        response = input('okay to remove {0}? (y/n) [n]'.format(item))
+        if response != 'y':
+            continue
+    remove(item, args.dryrun)

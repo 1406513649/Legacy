@@ -1,0 +1,119 @@
+#!/usr/bin/env python
+import os
+import sys
+import argparse
+import shutil
+import subprocess
+
+SCR = os.getenv("MYSCRATCH")
+assert SCR
+assert os.path.isdir(SCR)
+H = os.path.expanduser("~").replace("/ascldap/users", "/home")
+D, X = os.path.split(os.path.realpath(__file__))
+VERBOSE = True
+
+desc = "Copy paths in from {0} to mirrored directory tree in {1}".format(SCR, H)
+def main(argv=None):
+    global VERBOSE
+    if argv is None:
+        argv = sys.argv[1:]
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument("paths", nargs="+")
+    parser.add_argument("--ws", default=False, action="store_true",
+        help="Copy to workstation [default: %(default)s]")
+    parser.add_argument("-p", default=False, action="store_true",
+        help="Print, do not execute [default: %(default)s]")
+    parser.add_argument("-v", default=1, type=int,
+        help="Verbosity, 0=silent [default: %(default)s]")
+    parser.add_argument("-d", default=False, action="store_true",
+        help="Pass --delete to rsync [default: %(default)s]")
+    args = parser.parse_args(argv)
+    VERBOSE = args.v > 0
+    remote = None
+    if args.ws:
+        sys.path.insert(0, os.path.join(D, "private"))
+        try:
+            import machines
+            remote = machines.machine("workstation")
+        except ImportError:
+            print "Cannot import 'private/machines.py'"
+
+    for src in args.paths:
+        src = os.path.realpath(src)
+        assert os.path.exists(src)
+        srcd, srcb = os.path.split(src)
+        dstd = srcd.replace(SCR, H)
+        if dstd == srcd:
+            print "{0}: nothing to do".format(srcb)
+            continue
+        if not os.path.isdir(dstd):
+            log_action("MAKING", dstd)
+            os.makedirs(dstd)
+        dst = os.path.join(dstd, srcb)
+        copy(src, dst, execute=not args.p, verbosity=args.v, delete=args.d,
+             remote=remote)
+        continue
+    return
+
+
+def copy(src, dst, execute=True, verbosity=1, delete=False, remote=None):
+
+    def call(cmd):
+        stdout = sys.stdout if verbosity else os.devnull
+        stderr = sys.stderr if verbosity else os.devnull
+        log_action("EXECUTE", cmd)
+        if execute:
+            exe = subprocess.Popen(cmd, shell=True, stdout=stdout, stderr=stderr)
+            exe.wait()
+        return
+
+    if not os.path.exists(src):
+        return
+
+    if dst == src:
+        return
+
+    rsync_opts = "-arz"
+    if verbosity:
+        rsync_opts += " -{0}".format("v" * verbosity)
+    if delete:
+        rsync_opts += " --delete"
+
+    if not os.path.isdir(src):
+        # copy the file
+        if verbosity:
+            log_action("COPYING", os.path.basename(src), "from SCRATCH to MIRROR")
+        if execute:
+            shutil.copy(src, dst)
+
+    elif remote is None:
+        # rsync the directory
+        cmd = "rsync {0} {1} {2}".format(rsync_opts, src + os.path.sep, dst)
+        call(cmd)
+        if verbosity:
+            log_action("COPYING", os.path.basename(src), "from SCRATCH to MIRROR")
+        if execute:
+            shutil.copy(src, dst)
+
+    else:
+        # rsync to remote
+        # copy links
+        rsync_opts += " -L"
+        rdst = "{0}".format(dst.replace(H, "~"))
+        if os.path.isdir(src):
+            call("ssh {0} 'mkdir -p {1}'".format(remote, rdst))
+        post = os.path.sep if os.path.isdir(src) else ""
+        call("rsync {0} -e ssh {1}{4} {2}:{3}{4}".format(
+                rsync_opts, src, remote, rdst, post))
+
+    return
+
+def log_action(*args):
+    if not VERBOSE:
+        return
+    action = args[0]
+    other = " ".join(args[1:])
+    print "{0:>9}: {1}".format(action, other)
+
+if __name__ == "__main__":
+    main()

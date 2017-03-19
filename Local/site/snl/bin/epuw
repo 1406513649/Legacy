@@ -1,0 +1,108 @@
+#!/usr/bin/env python
+import os
+import re
+import sys
+import argparse
+import subprocess
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    description = "Wrapper around epu built in SEACAS"
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("runid",
+        help="Simulation runid (exodus file basename) [default: %(default)s]")
+    parser.add_argument("-e", default="exo",
+        help="Exodus file extension [default: %(default)s]")
+    parser.add_argument("-D", default=os.getcwd(),
+        help="Directory in which to find files [default: %(default)s]")
+    parser.add_argument("-o",
+        help="Output file basename [default: runid]")
+    parser.add_argument("-x", default=which("epu"),
+        help="Path to epu executable [default: %(default)s]")
+    parser.add_argument("--steps",
+        help="Subset of steps to transfer beg[:end[:step]] [default: %(default)s]")
+    parser.add_argument("-O", nargs=argparse.REMAINDER,
+        help="Any option to be passed directly to epu [default: %(default)s]")
+    args = parser.parse_args(argv)
+
+    base = args.runid
+    ext = args.e
+    if not os.path.isfile(args.x):
+        raise SystemExit("{0}: no such file".format(args.x))
+
+    # find matching files of form base.ext.N.n
+    R = re.compile(r"{0}\.{1}\.(?P<nprocs>[0-9]+)\.[0-9]+".format(base, ext))
+    files = [os.path.join(args.D, f) for f in os.listdir(args.D) if R.search(f)]
+    if not files:
+        raise SystemExit("No exodus files found")
+
+    # Find number of processors
+    try:
+        nprocs = int(R.search(files[0]).group("nprocs"))
+    except ValueError:
+        raise SystemExit("*** error: could not parse processor suffix for "
+                         "representative file {0}".format(files[0]))
+    njobs = len(set([R.search(f).group("nprocs") for f in files]))
+    if njobs > 1:
+        raise SystemExit("*** error: {0}: multiple parallel runs".format(base))
+
+    cmd = [args.x, "-processor_count", str(nprocs),
+           "-Root_directory", args.D,
+           "-extension", args.e, "-output_extension", args.e,
+           "-current_directory", os.getcwd()]
+    if args.O:
+        cmd.extend(args.O)
+    cmd.append(base)
+
+    def Int(_):
+        try: return int(_)
+        except ValueError: return
+    if args.steps:
+        steps = [Int(x) for x in args.steps.split(":")]
+        beg, end, step = 1, -1, 1
+        if len(steps) == 1:
+            b = steps[0]
+        elif len(steps) == 2:
+            b, e = steps[:2]
+        elif len(steps) == 3:
+            b, e, s = steps[:3]
+        else:
+            raise SystemExit("*** error: steps must be specified as beg:end:step")
+        if b is not None: beg = b
+        if e is not None: end = e
+        if s is not None: step = s
+
+        if beg > end:
+            raise SystemExit("*** error: beg > end")
+
+        if end < 0:
+            # Find last step number
+            print "Finding last time step"
+            tmp = [args.x, "-steps", "1:LAST:1"]
+            tmp.extend([x for x in cmd[1:]])
+            last = subprocess.Popen(tmp, stdout=subprocess.PIPE)
+            last.wait()
+            R = r"(?im)number of time steps on input databases\s*=\s*(?P<n>[0-9]+)"
+            end = int(re.search(R, last.communicate()[0]).group("n"))
+        cmd.insert(-1, "-steps {0}:{1}:{2}".format(beg, end, step))
+
+    subprocess.call(" ".join(cmd), shell=True)
+
+    if args.o:
+        os.rename(base + "." + ext, args.o + "." + ext)
+
+
+def which(exe):
+    path = os.getenv("PATH").split(os.pathsep)
+    path = list(set(path + ["/projects/seacas/linux_rhel6/current/bin",
+                            "/opt/seacas/bin"]))
+    exe = exe.strip()
+    for d in path:
+        if os.path.isfile(os.path.join(d, exe)):
+            return os.path.join(d, exe)
+    return None
+
+
+if __name__ == "__main__":
+    main()

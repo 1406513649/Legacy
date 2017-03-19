@@ -1,0 +1,21 @@
+#!/bin/sh
+SKIM_APP_DIR=$HOME/Applications
+if [ -z "$SKIM_APP_DIR" ]
+then
+	myDir="`dirname "$0"`"
+	myAppDir="$myDir/../Applications"
+	for i in ~/Applications ~/Applications/vim $myDir $myDir/vim $myAppDir $myAppDir/vim /Applications /Applications/vim /Applications/Utilities /Applications/Utilities/vim; do
+		if [ -x "$i/Skim.app" ]; then
+			SKIM_APP_DIR="$i"
+			break
+		fi
+	done
+fi
+if [ -z "$SKIM_APP_DIR" ]
+then
+	echo "Sorry, cannot find Skim.app.  Try setting the SKIM_APP_DIR environment variable to the directory containing Skim.app."
+	exit 1
+fi
+binary="$SKIM_APP_DIR/Skim.app/Contents/MacOS/Skim"
+name="`basename "$0"`"
+exec "$binary" ${1:+"$@"}

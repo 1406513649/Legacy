@@ -1,0 +1,10 @@
+changeps1: False
+
+ssl_verify: False
+
+envs_dirs:
+- ~/.conda/envs
+
+# offline: True
+
+always_yes: True

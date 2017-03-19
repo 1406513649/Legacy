@@ -1,0 +1,179 @@
+#!/usr/bin/env python
+"""Collect and submit jobs to abaqus through condor's qabaqus command.
+
+This script works in conjunction with qshow to submit jobs one after another
+only allowing n jobs to run simultaneously (2 is the upper limit per user on
+condor).
+"""
+import os
+import re
+import sys
+import time
+import getpass
+import argparse
+import subprocess
+from os.path import split, realpath, isfile, isdir, splitext, \
+    join, basename, dirname
+
+
+D, X = split(realpath(__file__))
+USER = getpass.getuser()
+EXE = "/apps/atk/bin/qabaqus"
+CWD = os.getcwd()
+
+
+def check_queu(dryrun=False):
+    if dryrun: return 0
+    return len(re.findall(USER, subprocess.check_output(["qshow"])))
+
+
+def call(cmd, stream=sys.stdout, dryrun=False):
+    if dryrun:
+        printc(cmd)
+        return 0
+    proc = subprocess.Popen(cmd.split(), stdout=stream, stderr=subprocess.STDOUT)
+    proc.wait()
+    return proc.returncode
+
+
+def printc(message, end="\n"):
+    sys.stdout.write(message + end)
+    sys.stdout.flush()
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--time", default=30., type=float,
+                   help="Time between queu checks [default: %(default)s]")
+    p.add_argument("-n", default=2, type=int,
+                   help="Number of simultaneous jobs [default: %(default)s]")
+    p.add_argument("--dryrun", default=False, action="store_true")
+    p.add_argument("--regex", help="Regular expression to filter filenames",
+                   default=".*")
+    p.add_argument("--cpus", default=8, type=int,
+                   help="Number of cpus [default: %(default)s]")
+    p.add_argument("--ver", default="abq6141",
+                   help="Abaqus version [default: %(default)s]")
+    p.add_argument("-b", default=False, action="store_true",
+                   help="Batch mode [default: %(default)s]")
+    p.add_argument("-F", default=False, action="store_true",
+                   help="Run files with existing odb files [default: %(default)s]")
+    p.add_argument("sources", nargs="*",
+                   help="Sources (directories or files) [default: .]")
+    args = p.parse_args()
+    search_dirs = []
+    input_files = []
+
+    if not args.sources:
+        search_dirs = [CWD]
+
+    for source in args.sources:
+        source = realpath(source)
+        if isfile(source):
+            assert splitext(source)[1] == ".inp"
+            input_files.append(source)
+        elif isdir(source):
+            search_dirs.append(source)
+        else:
+            sys.exit("{0}: file or directory not found".format(source))
+
+    regex = re.compile(r"{0}".format(args.regex))
+    input_files.extend([join(d, f)
+                        for d in search_dirs for f in os.listdir(d)
+                        if f.endswith(".inp")])
+
+    # filter input files
+    for (i, f) in enumerate(input_files):
+        if not regex.search(f):
+            input_files[i] = None
+        if isfile(splitext(f)[0] + '.odb') and not args.F:
+            input_files[i] = None
+    input_files = [f for f in input_files if f]
+    input_files.sort()
+
+    if not input_files:
+        sys.exit("No jobs found")
+
+    if args.cpus > 8:
+        args.n = 1
+
+    printc("Found {0} jobs to submit:".format(len(input_files)))
+    printc("\n".join("  {0}".format(basename(f)) for f in input_files))
+    printc("The PBS queu will be checked every {0:.2f} seconds".format(args.time))
+    printc("{0} jobs will be submitted at a time".format(args.n))
+    if not args.b:
+        resp = raw_input("continue? (y/n) [n]: ").lower()
+        if resp[0] != "y":
+            sys.exit("stopping")
+
+    i = 0
+    ti = time.time()
+    fh = open(X + ".con", "w")
+    waited = False
+
+    while True:
+
+        if i == len(input_files):
+            printc("All jobs submitted")
+            break
+
+        njobs = check_queu(dryrun=args.dryrun)
+        if njobs >= args.n:
+            # Job[s] running, wait and try again
+            t = time.time() - ti
+            printc("\rWaiting on currently running jobs ({0:.2f}s)".format(t),
+                   end="")
+            time.sleep(args.time)
+            waited = True
+            continue
+
+        # run the next job[s]
+        for j in range(args.n - njobs):
+            try:
+                filepath = input_files[i]
+            except IndexError:
+                break
+            i += 1
+            filedir, filename = split(filepath)
+            job = splitext(filename)[0]
+            cmd = "{0} -ver {1} -cpus {2} -job {3}".format(EXE,
+                                                           args.ver, args.cpus, job)
+            os.chdir(filedir)
+            fh.write("SUBMITTING:\n" + cmd + "\n")
+            call(cmd, stream=fh, dryrun=args.dryrun)
+            fh.flush()
+            # wait 1/10 second before trying again
+            time.sleep(.1)
+            pre = "" if not waited else "\n"
+            rd = filedir.replace(CWD, ".")
+            printc("{0}{1}/{2}: Submitted".format(pre, rd, job))
+            ti = time.time()
+            waited = False
+            os.chdir(CWD)
+
+    while check_queu(dryrun=args.dryrun):
+        time.sleep(args.time)
+
+    printc("Done")
+
+    if args.dryrun:
+        return
+
+    # check output of each job
+    for input_file in input_files:
+        root, ext = splitext(input_file)
+        sta = root + ".sta"
+        complete = isfile(sta)
+        if complete:
+            lines = open(sta).read()
+            complete = not re.search(r"(?ims)HAS\s+NOT\s+BEEN\s+COMPLETED", lines)
+        if complete:
+            continue
+
+        rd = dirname(input_file).replace(CWD, ".")
+        job = basename(root)
+        printc("***warning: {0}/{1}: not completed".format(rd, job))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,97 @@
+[user]
+	name = Tim Fuller
+	email = tjfulle@sandia.gov
+
+[color]
+	ui = auto
+[color "branch"]
+       current = yellow reverse
+       local = yellow
+       remote = green
+[color "diff"]
+       meta = blue bold
+       frag = magenta bold
+       old = red bold
+       new = green bold
+[color "status"]
+       added = yellow
+       changed = blue
+       untracked = cyan
+
+[color]
+	ui = true
+
+[color "diff"]
+       whitespace = red reverse
+[core]
+       whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
+	editor = /usr/bin/vim
+
+[alias]
+       stat = status
+       ci = commit
+       br = branch
+       co = checkout
+       df = diff
+       dc = diff --cached
+       lg = log -p
+       lol = log --graph --decorate --pretty=oneline --abbrev-commit
+       lola = log --graph --decorate --pretty=oneline --abbrev-commit --all
+       ls = ls-files
+       vdiff = difftool
+
+# Show files ignored by git:
+       ign = ls-files -o -i --exclude-standard
+	log-short = log --pretty=format:'%Cgreen%h%Creset \"%s\"%nAuthor: %an <%ae>%nDate:   %ad (%cr)%n'
+	log-short-nc = log --pretty=format:'%h \"%s\"%nAuthor: %an <%ae>%nDate:   %ad (%cr)%n'
+	log-oneline = log --pretty=format:'%Cgreen%h%Creset \"%s\" <%ae> [%ad] (%cr)'
+	log-oneline-nc = log --pretty=format:'%h \"%s\" <%ae> [%ad] (%cr)'
+	log-local = log --pretty=format:'%Cgreen%h%Creset \"%s\" <%ae> [%ad] (%cr)' origin..
+	show-tracking-branch = rev-parse --abbrev-ref --symbolic-full-name @{u}
+	local-stat = "!git status ; echo ; echo 'Commits in local repo not yet pushed to '`git show-tracking-branch`':' ; echo ; git log --pretty=format:'%Cgreen%h%Creset \"%s\" <%ae> [%ad] (%cr)' --name-status HEAD ^`git show-tracking-branch`"
+	local-stat-nc = "!git status ; echo ; echo 'Commits in local repo not yet pushed to '`git show-tracking-branch`':' ; echo ; git log --pretty=format:'%h \"%s\" <%ae> [%ad] (%cr)' --name-status HEAD ^`git show-tracking-branch`"
+	remote-stat = "!git status ; echo ; echo 'Commits in '`git show-tracking-branch`' not in local repo:' ; echo ; git log --pretty=format:'%Cgreen%h%Creset \"%s\" <%ae> [%ad] (%cr)' --name-status ^HEAD `git show-tracking-branch`"
+	remote-stat-nc = "!git status ; echo ; echo 'Commits in '`git show-tracking-branch`' not in local repo:' ; echo ; git log --pretty=format:'%h \"%s\" <%ae> [%ad] (%cr)' --name-status ^HEAD `git show-tracking-branch`"
+	local-stat-short = "!git status ; echo ; echo 'Commits in local repo not yet pushed to '`git show-tracking-branch`':' ; echo ; git log --pretty=format:'%Cgreen%h%Creset \"%s\" <%ae> [%ad] (%cr)' --shortstat --dirstat=0 HEAD ^`git show-tracking-branch`"
+	local-stat-short-nc = "!git status ; echo ; echo 'Commits in local repo not yet pushed to '`git show-tracking-branch`':' ; echo ; git log --pretty=format:'%h \"%s\" <%ae> [%ad] (%cr)' --shortstat --dirstat=0 HEAD ^`git show-tracking-branch`"
+	remote-stat-short = "!git status ; echo ; echo 'Commits in '`git show-tracking-branch`' not in local repo:' ; echo ; git log --pretty=format:'%Cgreen%h%Creset \"%s\" <%ae> [%ad] (%cr)' --shortstat --dirstat=0 ^HEAD `git show-tracking-branch`"
+	remote-stat-short-nc = "!git status ; echo ; echo 'Commits '`git show-tracking-branch`' not in local repo:' ; echo ; git log --pretty=format:'%h \"%s\" <%ae> [%ad] (%cr)' --shortstat --dirstat=0 ^HEAD `git show-tracking-branch`"
+	wlog = log --color-words
+	wdiff = diff --color-words
+
+[url "tjfulle@155.98.5.250:/space/csmgit/Payette.git"]
+        insteadOf = "csmpay"
+
+[url "software.sandia.gov:/space/sandiagit/Payette"]
+        insteadOf = "psoft"
+
+[url "tjfulle@155.98.5.250:/space/csmgit/Kayenta/code.git"]
+        insteadOf = "csmcode"
+
+[url "tjfulle@155.98.5.250:/space/csmgit/Kayenta/docs.git"]
+        insteadOf = "csmdocs"
+
+[url "tjfulle@155.98.5.250:/space/csmgit/Kayenta/benchmarks_payette.git"]
+        insteadOf = "csmtests"
+
+[url "condor:/apps/eng1/projects/github/matmodlab.git"]
+        insteadOf = "mmlcondor"
+
+[merge]
+  tool = git_ext_merge
+
+[mergetool "git_ext_merge"]
+  cmd = git_ext_merge "$BASE" "$LOCAL" "$REMOTE" "$MERGED"
+
+[diff]
+  tool = tkdiff
+
+[difftool]
+  prompt = false
+
+#[push]
+#	default = simple
+[http]
+	sslVerify = false
+[push]
+	default = current

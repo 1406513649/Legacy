@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+import os
+import re
+import sys
+import argparse
+import fnmatch
+
+
+VC = (".git", ".svn")
+
+
+def main(argv):
+    description = "search for files with exts in a directory hierarchy"
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("root",
+                        help="Search path directory [default: %(default)s]")
+    parser.add_argument("exts", nargs="+",
+                        help="Patterns [default: %(default)s]")
+    parser.add_argument("-d", type=int, default=100000,
+                        help="Depth [default: inf]")
+    parser.add_argument("--vc", action="store_true", default=False,
+                        help="Search VC dirs [default: %(default)s]")
+    opts = parser.parse_args(argv)
+
+    cwd = os.getcwd()
+    root = os.path.realpath(opts.root)
+    if not os.path.isdir(root):
+        parser.error("{0}: no such directory".format(root))
+
+    exts = []
+    for ext in opts.exts:
+        ext = r"*." + re.sub(r"^[\*\.]+", "", ext.strip())
+        exts.append(ext)
+
+    print "Looking for {0} files in {1}".format(
+        " ".join("." + x.lstrip("*.") for x in exts), root)
+
+    found = 0
+    for dirnam, dirs, files in os.walk(root):
+        I = len(list(set(dirnam.split(os.sep)) - set(root.split(os.sep))))
+        if I == opts.d + 1:
+            del dirs[:]
+            continue
+
+        if not opts.vc:
+            if any([x in VC for x in dirnam.split(os.sep)]):
+                del dirs[:]
+                continue
+
+            for item in VC:
+                if item in dirs:
+                    dirs.remove(item)
+                continue
+
+        # prune files
+        files = [os.path.join(dirnam, f) for f in files]
+        for f in files:
+            for ext in exts:
+                if fnmatch.fnmatch(f, ext):
+                    found += 1
+                    print f.replace(cwd, ".")
+                continue
+            continue
+        continue
+
+    print "{0:d} matches found".format(found)
+    return
+
+"""A verY strangle stringy For
+testing if This 'actually' Worx!"""
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

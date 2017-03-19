@@ -1,0 +1,2 @@
+#!/bin/sh
+cp $HOME/Local/texmf/tex/latex/tjf/nomenclature.sty .

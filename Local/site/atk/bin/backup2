@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+import os
+import sys
+import argparse
+from subprocess import Popen
+
+FY = 'FY16'
+D1 = '/home/e63302'
+BU = '/Volumes/e63302'
+skip = os.path.expanduser('~/Local/bin/skip.txt')
+assert os.path.isfile(skip)
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    p = argparse.ArgumentParser()
+    p.add_argument('-d', default=False, action='store_true', help='delete')
+    args = p.parse_args(argv)
+
+    if not os.path.isdir('/Volumes/e63302'):
+        command = '/usr/bin/open "cifs://baccifs/home2/e63302"'
+        Popen(command.split()).wait()
+
+    s = '/usr/bin/rsync -arvz --exclude-from {0}'.format(skip)
+    def sync(d1, d2, check_d1=1):
+        if check_d1:
+            assert os.path.isdir(d1)
+        assert os.path.isdir(d2)
+        command = s
+        if 'ssh' not in d1 and args.d:
+            command += ' --delete'
+        command += ' {0} {1}'.format(d1, d2)
+        Popen(command.split())
+
+    d1 = '/Users/e63302/Workspace/'
+    d2 = '/Volumes/e63302/Workspace/'
+    sync(d1, d2)
+
+    d1 = '/Users/e63302/Documents/'
+    d2 = '/Volumes/e63302/Documents/'
+    sync(d1, d2)
+
+    d1 = '-e ssh condor:/home/e63302/Workspace/'
+    d2 = '/Users/e63302/Workspace/'
+    sync(d1, d2, check_d1=0)
+
+if __name__ == '__main__':
+    main()

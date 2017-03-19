@@ -1,0 +1,60 @@
+family('compiler')
+
+darwin = system_is_darwin()
+
+prefix = getenv('MACPORTS_ROOT')
+if not os.path.isdir(prefix):
+  log_error('Load Error: ' + prefix + ' does not exist')
+
+# Set up MODULEPATH so that modules dependent on this compiler can be found
+MY_MODULEPATH_ROOT = getenv('MY_MODULEPATH_ROOT')
+MODULEPATH = os.path.join(MY_MODULEPATH_ROOT, 'macports/compiler/clang/{version}')
+prepend_path('MODULEPATH', MODULEPATH)
+
+# Set the environment
+PATH = os.path.join(prefix, 'bin')
+prepend_path('PATH', PATH)
+
+LIBRARY_PATH = os.path.join(prefix, 'lib')
+
+# This modules paths
+if not os.path.isdir(LIBRARY_PATH):
+    log_error('Load Error: ' + LIBRARY_PATH + ' does not exist')
+
+if darwin:
+    prepend_path('DYLD_LIBRARY_PATH', LIBRARY_PATH)
+else:
+    prepend_path('LD_LIBRARY_PATH', LIBRARY_PATH)
+prepend_path('LIBRARY_PATH', LIBRARY_PATH)
+
+# Set the MANPATH
+append_path('MANPATH', os.path.join(prefix, 'share/man'))
+
+# Set the compiler environment
+setenv('COMPILER', 'clang')
+setenv('COMPILER_VER', '{version}')
+
+CC  = os.path.join(prefix, 'bin/clang')
+CXX  = os.path.join(prefix, 'bin/clang' + '++')
+CPP  = os.path.join(prefix, 'bin/clang' + ' -E')
+
+setenv('CC', CC)
+set_alias('gcc', CC)
+set_alias('cc',  CC)
+
+setenv('CXX', CXX)
+set_alias('g++', CXX)
+set_alias('c++', CXX)
+
+set_alias('cpp', CPP)
+set_alias('ld',  CC)
+
+# Module environment variables
+setenv('CLANG_ROOT', prefix)
+setenv('CLANG_VERSION', version)
+setenv('CLANG_LIBRARY_PATH', LIBRARY_PATH)
+setenv('CLANG_INCLUDE_PATH', os.path.join(prefix, 'include'))
+
+# Activate this compiler in Macports
+command = '/opt/macports/bin/port select --set clang mp-clang-{major}.{minor}'
+execute(command, mode='load')

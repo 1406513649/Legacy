@@ -1,0 +1,64 @@
+# -*- mode: python -*-
+# Python module for macports installed software
+prereq_any('clang', 'gcc', 'intel')
+family('mpi')
+
+name = self.name
+upname = name.upper()
+version = self.version
+prefix = '{prefix}'
+if not os.path.isdir(prefix):
+    log_error('prefix ' + prefix + ' does not exist')
+port_full_version = '{port_full_version}'
+
+# set up MODULEPATH for MPI dependent modules
+mroot = getenv('MY_MODULEPATH_ROOT')
+c = getenv('MODULE_FAMILY_COMPILER')
+cv = getenv('MODULE_FAMILY_COMPILER_VERSION')
+cM = cv[0]
+cm = cv[2]
+mdir = os.path.join(mroot, 'macports/mpi', c, cv, name, version)
+if not os.path.isdir(mdir):
+    log_error(mdir + ': Directory does not exist')
+prepend_path('MODULEPATH', mdir)
+LIBRARY_PATH = os.path.join(prefix, 'lib')
+prepend_path('LIBRARY_PATH', LIBRARY_PATH)
+prepend_path('DYLD_LIBRARY_PATH', LIBRARY_PATH)
+if (cM == '6' and c == 'gcc'):
+    qname = name + '-gcc6'
+    LIBRARY_PATH = LIBRARY_PATH + name + '-' + cM
+else:
+    qname = name + '-' + c + cM + cm
+    LIBRARY_PATH = LIBRARY_PATH + name + '-' + cM + cm
+if os.path.isdir(LIBRARY_PATH):
+    prepend_path('LIBRARY_PATH', LIBRARY_PATH)
+    prepend_path('DYLD_LIBRARY_PATH', LIBRARY_PATH)
+
+# MPI specific environments
+setenv('MPI_NAME', name)
+setenv('MPIHOME', prefix)
+setenv('MPI_HOME', prefix)
+setenv('MPI_VERSION', version)
+setenv('MPI_BIN', os.path.join(prefix, 'bin'))
+setenv('MPI_LIBRARY_PATH', os.path.join(prefix, 'lib'))
+setenv('MPI_INCLUDE_PATH', os.path.join(prefix, 'include'))
+setenv('MPICC', os.path.join(prefix, 'bin/mpicc'))
+setenv('MPICXX', os.path.join(prefix, 'bin/mpicxx'))
+setenv('OMPI_MCA_oob_tcp_if_exclude', 'lo,cscotun0')
+setenv('OMPI_MCA_btl_tcp_if_exclude', 'lo,cscotun0')
+if os.path.isfile(os.path.join(prefix, 'bin/mpif90')):
+    setenv('MPIFC', os.path.join(prefix, 'bin/mpif90'))
+    setenv('MPIF77', os.path.join(prefix, 'bin/mpif77'))
+    setenv('MPIF90', os.path.join(prefix, 'bin/mpif90'))
+
+# Standard port environment variables
+setenv(upname + '_ROOT', prefix)
+setenv(upname + '_VERSION', version)
+setenv(upname + '_INCLUDE_PATH', os.path.join(prefix, 'include'))
+setenv(upname + '_LIBRARY_PATH', os.path.join(prefix, 'lib'))
+
+# Activate the software
+deactivate = 'port deactivate ' + name + ' ' + port_full_version
+execute(deactivate, mode='unload')
+activate = 'port activate ' + name + ' ' + port_full_version
+execute(activate, mode='load')

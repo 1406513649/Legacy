@@ -1,0 +1,186 @@
+#!/usr/bin/env python
+import os
+import re
+import sys
+import psutil
+import argparse
+from random import choice
+from string import ascii_uppercase as ascii
+from subprocess import call, Popen, STDOUT, PIPE
+
+def isabacmd(string):
+    if string[:6] == 'ABQcae':
+        return True
+    return False
+
+def get_procs():
+    ps = Popen(['ps', 'aux'], stdout=PIPE).communicate()[0]
+    procs = ps.split('\n')
+    n = len(procs[0].split()) - 1
+    rows = []
+    for row in procs[1:]:
+        row = row.split(None, n)
+        if row:
+            rows.append(row)
+    return rows
+
+D, X = os.path.split(os.path.realpath(__file__))
+CWD = os.path.realpath(os.getcwd())
+DESCRIPTION = '''calls abaqus with appropriate arguments'''
+LICENSE = ('5522@ut40sraw0001', '5522@ut40svaw0049', '522@ut40svaw0013',
+           '28518@condor2', '28518@r1lead')
+os.environ['LM_LICENSE_FILE'] = ':'.join(LICENSE)
+abaqus_dir = '/apps/abaqus'
+assert os.path.isdir(abaqus_dir)
+vglrun = '/usr/bin/vglrun'
+
+def main(argv):
+    parser = argparse.ArgumentParser(description=DESCRIPTION)
+    parser.add_argument('-i', dest='interactive', action='store_true',
+        default=False, help='Run interactively [default: %(default)s]')
+    parser.add_argument('--user', action='store', default=None,
+        help='Path to user subroutine file [default: %(default)s]')
+    parser.add_argument('-v', default=1, type=int,
+        help='Verbose [default: %(default)s]')
+    parser.add_argument('--mesa', action='store_true', default=False,
+        help='no graphics acceleration [default: %(default)s]')
+    parser.add_argument('-j', type=int, default=4, choices=(1,4,8,16,32),
+        help='Number of CPUs [default: %(default)s]')
+    parser.add_argument('-H', action='store_true', default=False,
+        help='Display abaqus help [default: %(default)s]')
+    parser.add_argument('-q', action='store_true', default=False,
+        help='Use qabaqus [default: %(default)s]')
+    parser.add_argument('-m', default=64, type=int,
+        help='qabaqus -mem [default: %(default)s]')
+    parser.add_argument('--viz', action='store_true', default=False,
+        help='Launch visualizer on completion [default: %(default)s]')
+    parser.add_argument('--kill', action='store_true', default=False,
+        help='Kill abaqus [default: %(default)s]')
+    parser.add_argument('--use-kernel', action='store_true', default=False,
+        help='Use Abaqus kernel to run scripts [default: %(default)s]')
+    parser.add_argument('--ver', default='6.14.1', choices=os.listdir(abaqus_dir),
+        help='Abaqus version [default: %(default)s]')
+    parser.add_argument('_file', metavar='file', nargs='*')
+    args, remaining = parser.parse_known_args(argv)
+
+    if args.kill:
+        for proc in psutil.process_iter():
+            if proc.name.startswith('ABQcae'):
+                print('killing', proc.name)
+                proc.kill()
+        return 0
+
+    # location of executable
+    if args.ver == 'R2016x':
+        abaqus_x = os.path.join(abaqus_dir,
+                                '{0}/CAE/Commands/abqb2016_1525'.format(args.ver))
+    else:
+        abaqus_x = os.path.join(abaqus_dir, '{0}/Commands/abaqus'.format(args.ver))
+    assert os.path.isdir(abaqus_dir), '{0}: no such directory'.format(abaqus_dir)
+    assert os.path.isfile(abaqus_x), '{0}: no such file'.format(abaqus_x)
+    aba_exe = 'qabaqus -ver {0}'.format(args.ver) if args.q else abaqus_x
+
+    aba_user = args.user
+    if aba_user is not None:
+        aba_user = os.path.realpath(args.user)
+        assert os.path.isfile(aba_user), '{0}: no such file'.format(aba_user)
+
+    # get the correct abaqus sub-command
+    aba_args = ''
+    if args.H:
+        sys.exit(call([abaqus_x, 'help']))
+
+    elif not args._file:
+        abaqus_x = '{0} {1}'.format(vglrun, abaqus_x)
+        aba_subcmd = 'cae'
+
+    else:
+        filepath = os.path.realpath(args._file[0])
+        assert os.path.isfile(filepath), '{0}: no such file'.format(args._file[0])
+        filedir, filename = os.path.split(filepath)
+        root, ext = os.path.splitext(filename)
+        if args.q:
+            aba_subcmd = ''
+            aba_args = '-job {0}'.format(root)
+            assert filedir == CWD, 'command must be run in file directory'
+        elif ext == '.jnl':
+            aba_subcmd = 'cae'
+            aba_args = 'recover={0}'.format(filepath)
+        elif ext == '.rpy':
+            aba_subcmd = 'cae'
+            aba_args = 'replay={0}'.format(filepath)
+        elif ext == '.odb':
+            abaqus_x = '{0} {1}'.format(vglrun, abaqus_x)
+            aba_subcmd = 'viewer'
+            aba_args = 'database={0}'.format(filepath)
+        elif ext == '.cae':
+            abaqus_x = '{0} {1}'.format(vglrun, abaqus_x)
+            aba_subcmd = 'cae'
+            aba_args = 'database={0}'.format(filepath)
+        elif ext == '.inp':
+            aba_subcmd = ''
+            aba_args = 'job={0} analysis'.format(root)
+            assert filedir == CWD, 'command must be run in file directory'
+            if args.interactive:
+                args.v = True
+                aba_args += ' interactive'
+        elif ext == '.py':
+            if args.use_kernel:
+                aba_subcmd = 'cae'
+                aba_args = 'noGui={0}'.format(root)
+            else:
+                args.v = 1
+                aba_subcmd = 'python'
+                aba_args = filepath
+                if len(args._file) > 1:
+                    aba_args += ' {0}'.format(' '.join(args._file[1:]))
+            if remaining:
+                aba_args += ' {0}'.format(' '.join(remaining))
+
+        else:
+            sys.exit('{0}: unrecognized file extension'.format(ext))
+
+    if aba_user is not None:
+        if args.q:
+            aba_args += ' -usub {0}'.format(aba_user)
+        else:
+            aba_args += ' user={0}'.format(aba_user)
+
+    if aba_subcmd not in ('viewer', 'cae', 'python'):
+        j = args.j
+        aba_cpus = '-cpus {0}'.format(j) if args.q else 'cpus={0}'.format(j)
+    else:
+        if args.mesa:
+            aba_args += ' -mesa'
+        aba_cpus = ''
+    aba_cmd = ' '.join([aba_exe, aba_subcmd, aba_args, aba_cpus])
+
+    if args.v:
+        f, stream = None, sys.stdout
+    else:
+        f = 'abaCOMM.txt'
+        stream = open(f, 'w')
+
+    aba_call = Popen(aba_cmd.split(), env=os.environ, stdout=stream, stderr=STDOUT)
+    aba_call.wait()
+
+    if aba_call.returncode == 0:
+        try: os.remove(f)
+        except TypeError: pass
+    else:
+        if not args.v:
+            msg = open(f).read().strip()
+            print('*** error: abaqus: \n\n{0}'.format(msg))
+            if 'localhost' in msg.lower():
+                print('\ntry setting ')
+                print('export DISPLAY=::1:10.0')
+
+    if not args.q and args.viz and aba_call.returncode == 0:
+        odb = root + '.odb'
+        aba_call = Popen('{0} viewer database={1}'.format(aba_exe, odb).split())
+        aba_call.wait()
+
+    return aba_call.returncode
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

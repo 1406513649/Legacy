@@ -1,0 +1,542 @@
+#!/usr/bin/python
+"""
+################################################################
+# clac version 005  2010-08-22      (c)  Mark Borgerding
+
+Usage: clac [options] [expr1 [expr2 ...] ]
+
+clac (Command Line Advanced Calculator) evaluates mathematical
+expressions given as arguments or as stdin and writes the answer(s) to stdout.
+
+Unlike other command line calculators, clac:
+    * has infix (natural order) expression syntax
+    * handles complex numbers.
+    * defines a great many functions and constants by default
+    * allows easy definition of new user functions and constants using python
+
+"But I don't know python".
+
+You don't need to know python to use clac.  Expressions like
+    "1 + 2 * 3"
+    "sin(pi/4)"
+    "exp(j * 2 * pi/100)"
+    "round(degrees(phase(e ** (2j))))"
+... act pretty much as you would expect.  Run the selftest (-T) for more examples.
+
+But if you *do* know python, it will help you extend clac's functionality.
+Relax, it's not that hard. See the sample .clacrc below.
+
+Everything in the python math, and cmath modules is available...
+    cos     cosh    acos    acosh   sin     sinh    asin    asinh
+    tan     tanh    atan    atan2   atanh
+    floor   ceil    fabs    abs     fmod modf degrees radians
+    exp     frexp   ldexp   hypot   pow     sqrt    log     log10
+
+  ... plus a variety of other functions created to make your life easier
+    phase angle mag2 cpx conj nfft gcd lcm sign log2 mag real imag
+    sind cosd tand asind acosd atand atan2d int2base
+
+For more info about a given func, run: clac "help(func)"
+
+"Oh but I really want the conversion from meters per second
+        to furlongs per fortnight"
+
+New data, functions, and modules can be made via the user's .clacrc file.
+
+e.g.
+    #sample .clacrc
+    from random import *
+    c = 3e8
+    verbose = True
+    binary_prefix = True   # equivalent to using -k
+    complex_tuple = True   # equivalent to using -p
+    def myfunc(x):
+        '''a user defined function'''
+        return x + 1
+
+
+Options:
+    -k : use k, m, g as binary prefix (kibibyte, mebibyte, gibibyte) [default]
+    -K : do NOT use k, m, g as binary prefix
+    -p : print complex numbers as (re, im) pairs, rather than re +imj
+    -T : run a self-diagnostic test (which makes a nice syntax demo)
+    -v : verbose
+    -h : help message
+    -c file: reads a config file other than $HOME/.clacrc
+    -C : display copyright
+    -N : number of decimals to print out floats [16]
+"""
+
+# __future__ division allows division of two integers to produce a float result
+from __future__ import division
+
+
+COPYRIGHT = """
+                    GNU GENERAL PUBLIC LICENSE
+                       Version 3, 29 June 2007
+
+ Copyright (C) 2009 Mark Borgerding
+   email: mark at borgerding dot net
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    This program has an explicit linking exception for the extensions
+    via the rc file interface.
+"""
+PREC = 16
+selftests="""
+1 + 2 == 3
+sqrt(-1) == j
+-2 * asin(-1) == pi
+abs(sin(pi)) < 1e-9
+abs(1-cos(0)) < 1e-9
+round(3.1 + -4.8j) == (3-5j)
+ceil(3.1 + -4.8j) == (4-4j)
+abs(3-4j) == 5
+degrees(pi) == 180
+radians(180) == pi
+abs(exp(j * pi) + 1) < 1e-9
+abs(sind(90) - 1) < 1e-9
+abs(cosd(90)) < 1e-9
+abs(tand(45) - 1) < 1e-9
+abs(asind(sind(42)) - 42) + abs(acosd(cosd(42)) - 42) + abs(atand(tand(42)) - 42) < 1e-9
+pow(1.2, 3.4) == 1.2 ** 3.4
+ldexp(1.2, 3) == 1.2 * 2 ** 3
+modf(1.2)[1] == 1
+log(81, 3) == 4
+gcd(6, 8) == 2
+lcm(6, 8) == 24
+angle(exp(j * pi)) == pi
+log(-1) ** 2 == -1 * pow(pi, 2)
+round(degrees(phase(e **(2j)))) == 115
+oct(8) == '010'
+0x42-042-42 == -10
+1k == 1024
+1m == 2 ** 20
+1g == 2 ** 30
+2 ** 10-1 == 1023
+2 ** 1k == 2 ** 1024
+int2base(0, 31) == '0'
+int2base(255, 16) == 'ff'
+int2base(255, 8) == '377'
+int(int2base(1970, 2), 2) == 1970
+"""
+#sum([ round(42 * exp(j * 2 * x * pi/4)) for x in range(4)]) == 0
+
+import math
+from math import e, pi, atan2, fmod, frexp, hypot, ldexp, modf
+G = 9.8065
+PI = pi
+R2D = 180. / PI
+D2R = PI / 180.
+
+def degrees(x):
+    return x * R2D
+
+def radians(x):
+    return x * D2R
+
+import cmath
+from cmath import acosh, asinh, atanh
+
+# other nice-to-have constants
+j = i = cmath.sqrt(-1)
+
+# some applications might want (re, im) instead of re + imj
+__print_cpx_as_pairs__ = False
+
+def dip(x):
+    """demote, if possible, a complex to scalar"""
+    if type(x) == complex and x.imag == 0:
+        return x.real
+    else:
+        return x
+
+def which_call(x, mathfunc, cmathfunc, allow_negative=True):
+    x = dip(x)
+    if type(x) == complex or (not allow_negative and x < 0):
+        return cmathfunc(x)
+    else:
+        return mathfunc(x)
+
+# marshall between the math and cmath functions automatically
+def acos(x):
+    return which_call(x, math.acos, cmath.acos)
+def asin(x):
+    return which_call(x, math.asin, cmath.asin)
+def atan(x):
+    return which_call(x, math.atan, cmath.atan)
+def cos(x):
+    return which_call(x, math.cos, cmath.cos)
+def cosh(x):
+    return which_call(x, math.cosh, cmath.cosh)
+def sin(x):
+    return which_call(x, math.sin, cmath.sin)
+def sinh(x):
+    return which_call(x, math.sinh, cmath.sinh)
+def tan(x):
+    return which_call(x, math.tan, cmath.tan)
+def tanh(x):
+    return which_call(x, math.tanh, cmath.tanh)
+def exp(x):
+    return which_call(x, math.exp, cmath.exp)
+def log10(x):
+    return which_call(x, math.log10, cmath.log10, False)
+def sqrt(x):
+    return which_call(x, math.sqrt, cmath.sqrt, False)
+
+#steal the help strings from the cmath functions
+acos.__doc__ = cmath.acos.__doc__
+asin.__doc__ = cmath.asin.__doc__
+atan.__doc__ = cmath.atan.__doc__
+cos.__doc__ = cmath.cos.__doc__
+cosh.__doc__ = cmath.cosh.__doc__
+sin.__doc__ = cmath.sin.__doc__
+sinh.__doc__ = cmath.sinh.__doc__
+tan.__doc__ = cmath.tan.__doc__
+tanh.__doc__ = cmath.tanh.__doc__
+exp.__doc__ = cmath.exp.__doc__
+log10.__doc__ = cmath.log10.__doc__
+sqrt.__doc__ = cmath.sqrt.__doc__
+
+def sind(x):
+    """Return the sine of x degrees"""
+    return sin(x * D2R)
+
+def cosd(x):
+    """Return the cosine of x degrees"""
+    return cos(x * D2R)
+
+def tand(x):
+    """Return the tangent of x degrees"""
+    return tan(x * D2R)
+
+def asind(x):
+    """Return the arc sine in degrees of x"""
+    return asin(x) * R2D
+
+def acosd(x):
+    """Return the arc cosine in degrees of x"""
+    return acos(x) * R2D
+
+def atand(x):
+    """Return the arc tangent in degrees of x"""
+    return atan(x) * R2D
+
+def atan2d(x, y):
+    """Return the arc tangent (angle relative to positive x axis) in degrees
+    of the Cartesian point x, y"""
+    return atan2(x, y) * R2D
+
+def log(x, b=e):
+    """log(x[, base]) -> the logarithm of x to the given base.
+    If the base not specified, returns the natural logarithm (base e) of x."""
+    if type(x) == complex or x<0:
+        return dip(cmath.log(x) / cmath.log(b))
+    else:
+        return math.log(x)/math.log(b)
+
+def real(x):
+    """return just the real portion"""
+    if type(x) == complex:
+        return x.real
+    else:
+        return x
+
+def imag(x):
+    """return just the imaginary portion"""
+    if type(x) == complex:
+        return x.imag
+    else:
+        return 0
+
+def sign(x):
+    """returns -1, 0, 1 for negative, zero, positive numbers"""
+    if x == 0:
+        return 0
+    elif x > 0:
+        return 1
+    else:
+        return -1
+
+def log2(x):
+    """logarithm base 2"""
+    return log(x, 2)
+
+def nfft(insize, direction=1, musthave=2, factors=(2, 3, 5)):
+    """find a 'good' fft size close to the desired size
+        sign(direction)     search directions
+        -1                  lower
+        1                   higher
+        0                   closest
+    """
+    insize = round(insize)
+    direction = sign(direction)
+    offset = 0
+    if type(factors) not in (tuple, list):
+        factors=(factors,)
+    while True:
+        ntmp = insize + offset
+        if musthave > 1 and (ntmp%musthave) == 0:
+            for f in factors:
+                while (ntmp%f) == 0:
+                    ntmp = ntmp / f
+                if ntmp == 1:
+                    return insize + offset
+        if direction == 0:
+            offset = (offset <= 0) - offset
+        else:
+            offset += direction
+
+def gcd(x, y):
+    """greatest common denominator"""
+    while x > 0:
+        (x, y) = (y % x, x) # Guido showed me this one on the geek cruise
+    return y
+
+def lcm(x, y):
+    """least common multiple"""
+    return x * y / gcd(x, y)
+
+def phase(z):
+    """phase of a complex in radians"""
+    z = cpx(z)
+    return atan2(z.imag, z.real)
+
+def phased(z):
+    """phase of a complex in radians"""
+    z = cpx(z)
+    return atan2d(z.imag, z.real)
+
+def cpx(x):
+    """convert a number or tuple to a complex"""
+    if type(x) == tuple:
+        return complex(x[0], x[1])
+    else:
+        return complex(x)
+
+def mag2(x):
+    """magnitude, squared"""
+    return abs(x * x)
+
+def conj(x):
+    """complex conjugate"""
+    x = cpx(x)
+    return complex(x.real, -x.imag)
+
+def complexify(x, func):
+    """call func on the real and imaginary portions, creating a complex from
+    the respective results"""
+    if type(x) == complex and x.imag != 0:
+        return dip(complex(func(x.real), func(x.imag)))
+    else:
+        return func(x)
+
+# overwrite the builtin math functions that don't handle complex
+def round(x):
+    'nearest integer'
+    if type(x) == complex:
+        return complexify(x, round)
+    else:
+        return math.floor(x + .5)
+
+def floor(x):
+    """round towards negative infinity"""
+    return complexify(x, math.floor)
+
+def ceil(x):
+    """round towards positive infinity"""
+    return complexify(x, math.ceil)
+
+def fabs(x):
+    """absolute value of real and imaginary parts"""
+    return complexify(x, math.fabs)
+
+def pow(x, y):
+    """raise to a power"""
+    if type(x) == complex or type(y) == complex:
+        return dip(exp(y * log(x))) # for some reason cmath does not define pow
+    else:
+        return math.pow(x, y)
+
+def factorial(x):
+    """compute the factorial of x"""
+    if x <= 0:
+        return 1
+    else:
+        return factorial(x-1) * x
+
+def int2base(x, b, alphabet='0123456789abcdefghijklmnopqrstuvwxyz'):
+    """convert an integer to its string representation in a given base"""
+    if b < 2 or b > len(alphabet):
+        if b == 64: # assume base64 rather than raise error
+            alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        else:
+            raise AssertionError("int2base base out of range")
+    if type(x) == complex: # return a tuple
+        return (int2base(x.real, b, alphabet), int2base(x.imag, b, alphabet))
+    if x <= 0:
+        if x == 0:
+            return alphabet[0]
+        else:
+            return  '-' + int2base(-x, b, alphabet)
+    # else x is non-negative real
+    rets=''
+    while x>0:
+        x, idx = divmod(x, b)
+        rets = alphabet[idx] + rets
+    return rets
+
+def pm(x, p=10.):
+    """find x +/- p%.  [default p: 10%]"""
+    p /= 100.
+    return x - p * x, x + p * x
+
+
+# some people may prefer these names
+mag = abs
+angle = phase
+angled = phased
+
+def fmt_float(x):
+    """convert a single float to a string"""
+    return '{0:<.{1}E}'.format(x, PREC)
+
+def fmt_cpx(x):
+    """convert a complex value to a string"""
+    if __print_cpx_as_pairs__ == True:
+        return '(%s,%s)' % (fmt_float(x.real), fmt_float(x.imag))
+    elif x.imag<0:
+        return '%s %sj' % (fmt_float(x.real), fmt_float(x.imag))
+    else:
+        return '%s + %sj' % (fmt_float(x.real), fmt_float(x.imag))
+
+def fmt(x):
+    """convert the evaluated expression to a string"""
+    if type(x) == complex:
+        if x.imag == 0:
+            return fmt_float(x.real)
+        else:
+            return fmt_cpx(x)
+
+    elif type(x) in (list, tuple):
+        return ','.join([fmt(item) for item in x ])
+
+    elif type(x) == float:
+        return fmt_float(x)
+
+    else:
+        return '%s' % x
+
+
+class Session:
+    """clac sequence of commands"""
+    def __init__(self):
+        import os
+        self.rcfile = '%s/.clacrc' % os.getenv('HOME')
+        self.env = {}
+        self.env['verbose'] = False
+        self.env['binary_prefix'] = True
+        self.env['complex_tuple'] = False
+
+    def read_cmdline(self):
+        import sys
+        import getopt
+        global PREC
+        try:
+            opts, self.args = getopt.getopt(sys.argv[1:], 'pvc:hCkTN:')
+            opts = dict(opts)
+        except getopt.GetoptError, e:
+            opts={}
+            opts['-h'] = True
+
+        if opts.has_key('-C'):
+            sys.stderr.write(COPYRIGHT)
+            sys.exit(1)
+        if opts.has_key('-h'):
+            sys.stderr.write(__doc__)
+            sys.exit(1)
+        PREC = opts.get('-N', 16)
+        self.env['verbose'] = opts.has_key('-v')
+        self.env['binary_prefix'] = opts.has_key('-K') == False
+        self.env['complex_tuple'] = opts.has_key('-p')
+        self.rcfile = opts.get('-c', self.rcfile)
+        if opts.has_key('-T'):
+            self.run_self_test()
+            sys.exit(0)
+
+    def eval_text(self, text, name="<text>"):
+        """evaluate a set of commands in a file"""
+        global __print_cpx_as_pairs__
+        __print_cpx_as_pairs__ = self.env['complex_tuple']
+        eval(compile(text, name,'exec'), globals(), self.env)
+
+    def eval_file(self, file):
+        """evaluate a set of commands in a file"""
+        self.eval_text(''.join(open(file).readlines()), '<%s>' % file)
+
+    def eval_to_string(self, s):
+        """evaluate an expression and print the string"""
+        if s is None: return
+        if s in ('','\n'): return
+        if self.env['binary_prefix']:
+            import re
+            s = re.sub(r'\b(\d+)[kK]\b', r'(\1*1024)', s)
+            s = re.sub(r'\b(\d+)[mM]\b', r'(\1*1048576)', s)
+            s = re.sub(r'\b(\d+)[gG]\b', r'(\1*1073741824)', s)
+
+        global __print_cpx_as_pairs__
+        __print_cpx_as_pairs__ = self.env['complex_tuple']
+
+        eval_rc = eval(s, globals(), self.env)
+        if  eval_rc is None: return
+        return fmt(eval_rc)
+
+    def eval_expr(self, s):
+        s2 = self.eval_to_string(s)
+        if s2:
+            print s2
+
+    def run_self_test(self):
+        for expr in selftests.split('\n'):
+            if expr == "": continue
+            result = self.eval_to_string(expr)
+            if result == "True" or result == "1":
+                print " %s" % expr
+            else:
+                raise AssertionError("FAILED:%s" % expr)
+
+    def main(self):
+        self.read_cmdline()
+        import os
+        import sys
+        # read and evaluate the rc file in the current context
+        if os.access(self.rcfile, os.F_OK):
+            self.eval_file(self.rcfile)
+
+        if len(self.args) < 1:
+            #interactive mode
+            while 1:
+                line = sys.stdin.readline()
+                if line == '':
+                    break
+                self.eval_expr(line)
+        else:
+            # arguments are expressions
+            for expr in self.args:
+                self.eval_expr(expr)
+
+if __name__ == "__main__":
+    ses = Session()
+    ses.main()

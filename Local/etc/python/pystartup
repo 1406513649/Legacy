@@ -1,0 +1,27 @@
+# Add auto-completion and a stored history file of commands to your Python
+# interactive interpreter. Requires Python 2.0+, readline. Autocomplete is bound
+# to the Esc key by default (you can change it - see readline docs).
+#
+# Store the file in $HOME/Local/etc/python.d/pystartup, and set an environment
+# variable to point to it:
+# "export PYTHONSTARTUP=$HOME/Local/etc/python.d/pystartup" in bash.
+#
+
+import atexit
+import os
+import re
+import readline
+import rlcompleter
+import socket
+import _socket
+import sys
+import time
+import timeit
+
+history = os.path.expanduser('~/.pyhistory')
+if not os.path.isfile(history):
+    with open(history, 'wb') as fh: fh.write('')
+readline.read_history_file(history)
+
+readline.parse_and_bind('tab: complete')
+atexit.register(readline.write_history_file, history)

@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+import os
+import sys
+import argparse
+from subprocess import call
+argv = sys.argv[1:]
+
+def find_app(App):
+    apps = []
+    app = " ".join(App.split()).lower()
+    # Search directories, listed in order of precedence
+    for p in [os.path.expanduser("~/Applications"), "/Applications"]:
+        for ddf in os.walk(p):
+            if not ddf[0].endswith(".app"):
+                continue
+            if App == os.path.splitext(os.path.basename(ddf[0]))[0]:
+                return ddf[0]
+            elif app in ddf[0].lower() and ddf[0].endswith(".app"):
+                apps.append(ddf[0])
+            del ddf[1][:]
+    if not apps:
+        return None
+    return sorted(apps, key=lambda x: os.path.basename(x))[-1]
+
+if "darwin" in sys.platform.lower():
+    cubit = find_app("Cubit")
+    if cubit is None:
+        raise SystemExit("cubit application not found")
+    if not argv:
+        cubit = "open -a {0}".format(cubit)
+    else:
+        cubit = os.path.join(os.path.dirname(cubit), "cubit.command")
+
+else:
+    for dirpath in os.getenv("PATH").split(os.pathsep):
+        if "cubit" in os.listdir(dirpath):
+            cubit os.path.join(dirpath, "cubit")
+            break
+    else:
+        raise SystemExit("{0}: not found in path".format(exe))
+
+if "--cwd" in argv:
+    argv[argv.index("--cwd")] = "-workingdir={0}".format(os.getcwd())
+
+argv = " ".join('{0}'.format(x) for x in argv)
+sys.exit(call("{0} {1}".format(cubit, argv), shell=True))

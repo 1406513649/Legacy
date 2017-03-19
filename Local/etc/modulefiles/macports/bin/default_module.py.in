@@ -1,0 +1,25 @@
+# -*- mode: python -*-
+# Python module for macports installed software",
+name = self.name
+upname = name.upper()
+version = self.version
+prefix = '{prefix}'
+if not os.path.isdir(prefix):
+    log_error('prefix ' + prefix + ' does not exist')
+port_full_version = '{port_full_version}'
+LIBRARY_PATH = os.path.join(prefix, 'lib')
+prepend_path('LIBRARY_PATH', LIBRARY_PATH)
+prepend_path('DYLD_LIBRARY_PATH', LIBRARY_PATH)
+
+# Standard port environment variables
+setenv(upname + '_ROOT', prefix)
+setenv(upname + '_VERSION', version)
+setenv(upname + '_LIBRARY_PATH', os.path.join(prefix, 'lib'))
+setenv(upname + '_INCLUDE_PATH', os.path.join(prefix, 'include'))
+
+# Activate the software
+deactivate = 'port deactivate ' + name + ' ' + port_full_version
+execute(deactivate, mode='unload')
+
+activate = 'port activate ' + name + ' ' + port_full_version
+execute(activate, mode='load')

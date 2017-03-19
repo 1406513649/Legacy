@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+
+def help():
+    return ('\t{module_name} - loads the {name} environment\n'
+            '\tThe following env variables are modified:\n'
+            '\t{prefix}/bin to $PATH\n'
+            '\t{man_path} to $MANPATH\n'
+            '\tThe following env variables are added:\n'
+            '\t{prefix} to $MPIDIR\n'
+            '\tVersion {version}\n')
+
+def whatis():
+    return 'loads the {name} environment'
+
+conflict('mpi')
+prereq('compiler')
+
+compiler = getenv('COMPILER')
+compiler_ver = getenv('COMPILER_VER')
+
+if compiler is None or compiler_ver is None:
+    raise_error('{module_name} Load Error: COMPILER env vars were '
+                'not properly defined'.format(module_name=module_name))
+
+if 'raptor' not in HOSTNAME:
+    raise_error('openmpi.1.6.4 module set up only for raptor')
+
+x = module_name.split('.', 1)
+name = x[0].split('/')[1]
+version = x[1]
+prefix = '/apps/mpi/x86_64-{0}-{1}/{2}-{3}'.format(
+        compiler, compiler_ver, name, version)
+
+if not exists(prefix):
+    raise_error('{0} Load Error: {1} does not exist'.format(module_name, prefix))
+
+man_path = join(prefix, 'share/man')
+setenv('MPIHOME', prefix)
+setenv('MPI_HOME', prefix)
+setenv('MPI_BIN', join(prefix, 'bin'))
+prepend_path('PATH', join(prefix, 'bin'))
+prepend_path('LD_LIBRARY_PATH', [join(prefix, 'lib64'), 
+                                 join(prefix, 'lib64/shared')])
+
+cur_manpath = getenv('MANPATH')
+if cur_manpath is None:
+    setenv('MANPATH', '/usr/share/man')
+append_path('MANPATH', man_path)

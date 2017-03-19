@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+
+def help():
+    return ('\t{module_name} - loads the compiler env variables\n'
+            '\tThe following env variables are set:\n'
+            '\t\t$COMPILER, $COMPILER_VER, $CC, $FC\n'
+            '\tThe following env variables are modified:\n'
+            '\t\t$PATH, $MANPATH, $LD_LIBRARY_PATH\n')
+
+def whatis():
+    return 'loads the {module_name} environment'
+
+conflict('compiler')
+
+version = '2013.1.117'
+icc_prefix = '/apps/intel/composer_xe_{0}'.format(version)
+ifc_prefix = '/apps/intel/composer_xe_{0}'.format(version)
+
+if not exists(ifc_prefix):
+    raise_error('{0} Load Error: {1} does not exist'.format(
+        module_name, ifc_prefix))
+
+setenv('COMPILER', 'intel')
+setenv('COMPILER_VER', version)
+setenv('CC',  join(icc_prefix, 'bin/intel64/icc'))
+setenv('CXX', join(icc_prefix, 'bin/intel64/icpc'))
+setenv('FC',  join(ifc_prefix, 'bin/intel64/ifort'))
+setenv('F77', join(ifc_prefix, 'bin/intel64/ifort'))
+setenv('F90', join(ifc_prefix, 'bin/intel64/ifort'))
+
+path = os.pathsep.join([join(icc_prefix, 'bin/intel64'),
+                        join(ifc_prefix, 'bin/intel64')])
+prepend_path('PATH', path)
+
+lib_path = os.pathsep.join([join(icc_prefix, 'compiler/lib/intel64'),
+                            join(ifc_prefix, 'compiler/lib/intel64'),
+                            join(icc_prefix, 'mkl/lib/intel64')])
+prepend_path('LD_LIBRARY_PATH', lib_path)
+
+# there may be a bug in modules where it sets MANPATH to /usr/man?
+# iff MANPATH isn't already defined.. weird
+cur_manpath = os.getenv('MANPATH')
+if cur_manpath is None:
+    setenv('MANPATH', '/usr/share/man')
+manpath = os.pathsep.join([join(icc_prefix, 'man'), join(ifc_prefix, 'man')])
+prepend_path('MANPATH', manpath)
+
+lic_path = get_output('licenses -l intel -r license').strip()
+prepend_path('LM_LICENSE_FILE', lic_path)

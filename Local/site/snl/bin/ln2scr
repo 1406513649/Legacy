@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+import os
+import sys
+import argparse
+
+SCR = os.getenv("MYSCRATCH")
+assert SCR
+assert os.path.isdir(SCR)
+H = os.path.expanduser("~")
+H = H.replace("/ascldap/users", "/home")
+
+desc = "Symbolically link files to mirrored directory tree in {0}".format(SCR)
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument("files", nargs="+")
+    args = parser.parse_args(argv)
+
+    for f in args.files:
+        fabs = os.path.abspath(f)
+        freal = os.path.realpath(f)
+        assert os.path.exists(fabs)
+        fdir, fbase = os.path.split(fabs)
+        scrd = fdir.replace(H, SCR)
+        if scrd == fdir:
+            print "{0}: nothing to do".format(fbase)
+            continue
+        if not os.path.isdir(scrd):
+            os.makedirs(scrd)
+        fnew = os.path.join(scrd, fbase)
+        try:
+            os.remove(fnew)
+        except OSError:
+            pass
+        print "{0} -> {1}".format(fnew, freal)
+        os.symlink(freal, fnew)
+
+if __name__ == "__main__":
+    main()

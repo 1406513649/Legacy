@@ -1,0 +1,49 @@
+root = /Users/tjfulle
+root = ssh://ceerws1106//ascldap/users/tjfulle
+
+servercmd = /ascldap/users/tjfulle/.swx/bin/unison
+
+# Paths to synchronize
+path = Documents
+path = FY
+
+ # Some regexps specifying names and paths to ignore
+ignore = Name temp.*
+ignore = Name *~
+ignore = Name .*~
+ignore = Name *.o
+ignore = Name *.tmp
+ignore = Name .DS_Store
+ignore = Name .DS_Store.*
+ignore = Name ._.DS_Store
+ignore = Name ._.DS_Store.*
+ignore = Name .localized
+ignore = Name .com.apple.*
+ignore = Name Icon
+ignore = Name .ipynb_checkpoints
+
+# Keep a backup copy of every file in a central location
+#backuplocation = central
+#backupdir = /Users/tjfulle/Library/Unison/backups
+#backup = Name *
+#backupprefix = $VERSION.
+#backupsuffix =
+
+# Use this command for displaying diffs
+#diff = diff -y -W 79 --suppress-common-lines
+
+# Log actions to the terminal
+log = true
+logfile = /Users/tjfulle/Library/Unison/unison.log
+
+auto = true
+times = true
+prefer = newer
+force = newer
+
+ignore = Path {Documents/.com.apple.timemachine.supported}
+ignore = Path {Documents/.localized}
+ignore = Path {Documents/Microsoft User Data}
+ignore = Path {Documents/NoMachine}
+ignore = Path {FY/Current/Projects}
+ignore = Path {FY/17/Projects}

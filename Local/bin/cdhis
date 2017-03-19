@@ -1,0 +1,3 @@
+#!/bin/sh
+BOOKMARKS=${HOME}/Local/bin/bookmark_manager.py
+${BOOKMARKS} --cdhis

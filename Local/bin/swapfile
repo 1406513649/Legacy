@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+
+import os,sys,shutil
+
+usage = """{0}: swap files abc and xyz
+usage: {0} <abc xyz>""".format(os.path.basename(__file__))
+
+if len(sys.argv[1:]) != 2 or "-h" in sys.argv: sys.exit(usage)
+
+f1,f2 = sys.argv[1:]
+
+if not os.path.isfile(f1): sys.exit("file %s not found"%f1)
+if not os.path.isfile(f2): sys.exit("file %s not found"%f2)
+
+tmp = "tmp.foobaz.12382410"
+shutil.move(f1,tmp)
+shutil.move(f2,f1)
+shutil.move(tmp,f2)
+

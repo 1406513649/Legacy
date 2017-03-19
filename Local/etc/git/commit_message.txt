@@ -1,0 +1,13 @@
+<@trilinos/package> Short description
+
+More detailed description
+
+- Include bullets if you like
+
+1. Or numbered lists
+
+<Addresses/Closes>: #<>
+
+Build/Test Cases Summary
+Enabled Packages: <>
+Disabled Packages: <>

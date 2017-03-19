@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+
+import os
+import sys
+do_not_list = True
+filename = os.getenv('PY_MODULESFILE', join(HOME, '.modulespath'))
+if isfile(filename):
+    for line in open(filename):
+        if not line.split():
+            continue
+        add_to_modulepath(expanduser(line.strip()))
+
+# Look for TCL modules
+modules_home = os.getenv('MODULESHOME')
+if not modules_home:
+    sys.exit(0)
+
+# Look for modulecmd
+directories = [os.path.join(modules_home, 'bin')]
+directories.extend(os.getenv('PATH').split(os.pathsep))
+for directory in directories:
+    filename = os.path.join(directory, 'modulecmd')
+    if os.path.isfile(filename):
+        break
+else:
+    put_stderr('MODULESHOME environment variable found, but not modulecmd')
+    sys.exit(0)
+setenv('MODULECMD', filename)
